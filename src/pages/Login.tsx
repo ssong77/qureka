@@ -13,10 +13,26 @@ import {
   Paper
 } from '@mui/material';
 import { Visibility, VisibilityOff, Home, Google } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const handleClickShowPassword = () => setShowPassword(!showPassword);
+
+  const handleLogin = () => {
+    if (email === '1234' && password === '1234') {
+      login();
+      navigate('/');
+    } else {
+      alert('아이디 또는 비밀번호가 올바르지 않습니다.');
+    }
+  };
 
   return (
     <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -32,7 +48,8 @@ function Login() {
               margin="normal"
               label="Email"
               variant="outlined"
-              defaultValue="skmswlsdnt@gmail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
             <TextField
               fullWidth
@@ -41,6 +58,8 @@ function Login() {
               type={showPassword ? 'text' : 'password'}
               variant="outlined"
               placeholder="At least 12 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -57,7 +76,7 @@ function Login() {
               <Link href="#" underline="none">비밀번호 찾기</Link>
             </Box>
 
-            <Button variant="contained" color="primary" fullWidth sx={{ mb: 2 }}>
+            <Button variant="contained" color="primary" fullWidth sx={{ mb: 2 }} onClick={handleLogin}>
               Sign up
             </Button>
 
@@ -67,7 +86,7 @@ function Login() {
             </Box>
 
             <Typography variant="body2" color="text.secondary" mt={3}>
-              계정이 없으신가요? <Link href="#" underline="hover">회원가입</Link>
+              Already using Respondo? <Link href="#" underline="hover">Log in</Link>
             </Typography>
           </Box>
         </Paper>
