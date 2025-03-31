@@ -1,10 +1,11 @@
-
 import React from 'react';
 import { Box, Button, Container, Typography, AppBar, Toolbar, Link } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import ImageIcon from '@mui/icons-material/Image';
 import Logo from '../assets/images/logo.svg';
 
 function Home() {
+  const navigate = useNavigate();
   return (
     <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh' }}>
       <AppBar position="static" color="transparent" elevation={0}>
@@ -12,8 +13,12 @@ function Home() {
           <img src={Logo} alt="Logo" style={{ height: '40px' }} />
           <Box>
             <Link href="#" underline="none" sx={{ mr: 2 }}>About us</Link>
-            <Link href="#" underline="none" sx={{ mr: 2 }}>회원가입</Link>
-            <Button variant="outlined" size="small">로그인</Button>
+           
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => navigate('/login')}
+            >로그인</Button>
           </Box>
         </Toolbar>
       </AppBar>
@@ -27,7 +32,7 @@ function Home() {
         </Typography>
 
         <Box sx={{ mt: 4, mb: 6 }}>
-          <Button variant="contained" sx={{ mr: 2 }}>회원가입</Button>
+          <Button variant="contained" sx={{ mr: 2 }}>시작하기</Button>
           <Button variant="outlined">사용방법(변경예정)</Button>
         </Box>
 
