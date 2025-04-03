@@ -47,7 +47,7 @@ function UploadPage() {
       case 3: // 아무개
         return (
           <>
-            {renderSelect('난이도', ['초등', '중등', '고등'])}
+            {renderSelect('키잉', ['초등', '중등', '고등'])}
           </>
         );
       default:
@@ -65,7 +65,7 @@ function UploadPage() {
           <Select
             labelId={`${id}-label`}
             id={id}
-            label={label} // ✅ 이게 중요함!
+            label={label} // 
             defaultValue=""
           >
             {options.map((opt) => (
