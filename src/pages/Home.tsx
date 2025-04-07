@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import ImageIcon from '@mui/icons-material/Image';
-import Logo from '../assets/images/logo.svg';
+import LogoImage from '../assets/images/큐레카_로고 이미지.png'; // 로고 경로
 
 function Home() {
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ function Home() {
     handleMenuClose();
     navigate('/');
   };
+
   const handleStart = () => {
     if (isLoggedIn) {
       navigate('/upload');
@@ -36,23 +37,30 @@ function Home() {
       navigate('/login');
     }
   };
+
   return (
     <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh' }}>
       <AppBar position="static" color="transparent" elevation={0}>
         <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <img src={Logo} alt="Logo" style={{ height: '40px' }} />
+          {/* 로고 이미지 */}
+          <Box
+            component="img"
+            src={LogoImage}
+            alt="Qureka Logo"
+            sx={{ height: 100, cursor: 'pointer' }}
+            onClick={() => navigate('/')}
+          />
+
           <Box>
-            <Link href="#" underline="none" sx={{ mr: 2 }}>About us</Link>
+            <Link href="#" underline="none" sx={{ mr: 2 }}>
+              About us
+            </Link>
             {isLoggedIn ? (
               <>
                 <IconButton onClick={handleMenuOpen}>
                   <AccountCircle />
                 </IconButton>
-                <Menu
-                  anchorEl={anchorEl}
-                  open={open}
-                  onClose={handleMenuClose}
-                >
+                <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
                   <MenuItem onClick={handleLogout}>로그아웃</MenuItem>
                 </Menu>
               </>
@@ -74,7 +82,9 @@ function Home() {
         </Typography>
 
         <Box sx={{ mt: 4, mb: 6 }}>
-        <Button variant="contained" sx={{ mr: 2 }} onClick={handleStart}>시작하기!</Button>
+          <Button variant="contained" sx={{ mr: 2 }} onClick={handleStart}>
+            시작하기!
+          </Button>
         </Box>
 
         <Box
@@ -84,7 +94,7 @@ function Home() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            borderRadius: 2
+            borderRadius: 2,
           }}
         >
           <ImageIcon sx={{ fontSize: 64, color: '#b0b0b0' }} />
