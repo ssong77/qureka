@@ -149,6 +149,7 @@ function UploadPage() {
             <Tab label="핵심 요약" />
             <Tab label="주제 요약" />
             <Tab label="목차 요약" />
+            <Tab label="목차 요약" />
             <Tab label="키워드 요약" />
           </Tabs>
         </Box>
