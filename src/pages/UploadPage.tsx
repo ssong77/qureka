@@ -4,11 +4,13 @@ import {
   FormControl, InputLabel, Button, Tabs, Tab, Paper
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 function UploadPage() {
   const [tab, setTab] = useState(0);
   const [fileName, setFileName] = useState<string | null>(null);
   const [summary, setSummary] = useState(''); // 요약 결과 상태
+  const navigate = useNavigate();
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTab(newValue);
@@ -149,7 +151,6 @@ function UploadPage() {
             <Tab label="핵심 요약" />
             <Tab label="주제 요약" />
             <Tab label="목차 요약" />
-            <Tab label="목차 요약" />
             <Tab label="키워드 요약" />
           </Tabs>
         </Box>
@@ -169,7 +170,12 @@ function UploadPage() {
                 <Button variant="outlined" color="primary">요약 내용 변경</Button>
               </Grid>
               <Grid item>
-                <Button variant="contained" color="primary">문제 생성</Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate('/question-create')}>
+                  문제 생성
+                </Button>
               </Grid>
             </Grid>
           )}
