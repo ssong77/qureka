@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, Grid, Paper, Tabs, Tab,
-  FormControl, InputLabel, Select, MenuItem, Container
+  FormControl, InputLabel, Select, MenuItem, Container, Button
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 function QuestionCreatePage() {
   const [selectedTab, setSelectedTab] = useState(0);
+  const navigate = useNavigate();
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
@@ -62,6 +64,25 @@ function QuestionCreatePage() {
             {renderSelect('빈칸 수', ['1', '2'])}
           </>
         )}
+
+        {/* 문제 생성 버튼 + 돌아가기 버튼 */}
+        <Box textAlign="center" mt={3}>
+          <Grid container spacing={2} justifyContent="center">
+            <Grid item>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/upload')}
+              >
+                ← 문서 요약으로 돌아가기
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button variant="contained" color="primary">
+                ✦ 문제 생성
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
       </>
     );
   };
@@ -70,7 +91,7 @@ function QuestionCreatePage() {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Typography variant="h6" gutterBottom>문제 생성 설정 페이지</Typography>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={5}>
           <Paper sx={{ height: '100%', p: 2, overflowY: 'auto', minHeight: 500 }}>
             <Typography variant="subtitle1" fontWeight="bold" mb={2}>요약된 내용</Typography>
             <Box sx={{ whiteSpace: 'pre-line' }}>
@@ -78,7 +99,7 @@ function QuestionCreatePage() {
             </Box>
           </Paper>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={7}>
           {renderRightSideContent()}
         </Grid>
       </Grid>
