@@ -64,6 +64,11 @@ function QuestionCreatePage() {
             {renderSelect('빈칸 수', ['1', '2'])}
           </>
         )}
+        {selectedTab === 3 && (
+          <>
+            {renderSelect('빈칸 수', ['1', '2'])}
+          </>
+        )}
 
         {/* 문제 생성 버튼 + 돌아가기 버튼 */}
         <Box textAlign="center" mt={3}>
