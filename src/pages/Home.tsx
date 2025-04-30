@@ -1,104 +1,161 @@
-import React, { useState } from 'react';
-import {
-  Box, Button, Container, Typography, AppBar, Toolbar,
-  IconButton, Link, Menu, MenuItem
-} from '@mui/material';
+import React from 'react';
+import { Box, Typography, Container, Grid, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
 import { useAuth } from '../contexts/AuthContext';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import ImageIcon from '@mui/icons-material/Image';
-import LogoImage from '../assets/images/큐레카_로고 이미지.png'; // 로고 경로
+
+import examImage from '../assets/images/exam.png';
+import questionTypesImage from '../assets/images/pdf.png';
+import howToUseImage from '../assets/images/process.png';
 
 function Home() {
   const navigate = useNavigate();
-  const { isLoggedIn, logout } = useAuth();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = () => {
-    logout();
-    handleMenuClose();
-    navigate('/');
-  };
-
-  const handleStart = () => {
-    if (isLoggedIn) {
-      navigate('/upload');
-    } else {
-      alert('로그인이 필요합니다!');
-      navigate('/login');
-    }
-  };
+  const { isLoggedIn } = useAuth();
 
   return (
-    <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh' }}>
-      <AppBar position="static" color="transparent" elevation={0}>
-        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          {/* 로고 이미지 */}
-          <Box
-            component="img"
-            src={LogoImage}
-            alt="Qureka Logo"
-            sx={{ height: 100, cursor: 'pointer' }}
-            onClick={() => navigate('/')}
-          />
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(to bottom, #dbeafe, #93c5fd, #bfdbfe)',
+      }}
+    >
+      <Header />
 
-          <Box>
-            <Link href="#" underline="none" sx={{ mr: 2 }}>
-              About us
-            </Link>
-            {isLoggedIn ? (
-              <>
-                <IconButton onClick={handleMenuOpen}>
-                  <AccountCircle />
-                </IconButton>
-                <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
-                  <MenuItem onClick={handleLogout}>로그아웃</MenuItem>
-                </Menu>
-              </>
-            ) : (
-              <Button variant="outlined" size="small" onClick={() => navigate('/login')}>
-                로그인
-              </Button>
-            )}
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="md" sx={{ textAlign: 'center', py: 8 }}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
+      {/* Hero Section */}
+      <Container maxWidth="md" sx={{ textAlign: 'center', py: 10 }}>
+        <Typography variant="h3" fontWeight="bold" gutterBottom>
           여러분들의 문서 도우미!
         </Typography>
-        <Typography variant="body1" color="text.secondary" gutterBottom>
-          다양한 문서들을 쉽게 작성할 수 있도록 도와드리니까
+        <Typography variant="h6" color="text.secondary" mb={4}>
+          다양한 문서들을 쉽게 작성할 수 있도록 도와드립니다
         </Typography>
-
-        <Box sx={{ mt: 4, mb: 6 }}>
-          <Button variant="contained" sx={{ mr: 2 }} onClick={handleStart}>
-            시작하기!
-          </Button>
-        </Box>
-
-        <Box
-          sx={{
-            bgcolor: '#e9e8eb',
-            height: 300,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderRadius: 2,
+        <Button
+          variant="contained"
+          onClick={() => {
+            if (isLoggedIn) {
+              navigate('/upload');
+            } else {
+              alert('로그인이 필요합니다!');
+              navigate('/login');
+            }
           }}
         >
-          <ImageIcon sx={{ fontSize: 64, color: '#b0b0b0' }} />
+          시작하기!
+        </Button>
+      </Container>
+
+      {/* Section 1: 시험 및 퀴즈를 준비해 보세요 */}
+      <Container maxWidth="lg" sx={{ py: 10 }}>
+        <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
+          <Grid container spacing={6} alignItems="center">
+            {/* 왼쪽 텍스트 */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h4" fontWeight="bold" mb={4} sx={{ textAlign: 'left' }}>
+                시험 및 퀴즈를 준비해 보세요
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 2 }}>
+                PDF만 업로드하면 나머지 작업은 AI 문제 생성기가 처리해 드립니다. <br />
+                클릭 몇 번이면 원하는 대로 맞춤형 시험이나 퀴즈를 생성할 수 있습니다. <br />
+                더 빠르고 강력하며 스마트한 도구를 만나보세요.
+              </Typography>
+            </Grid>
+
+            {/* 오른쪽 이미지 */}
+            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Box
+                component="img"
+                src={examImage}
+                alt="문서 요약"
+                sx={{
+                  width: '800%',
+                  maxWidth: 400,
+                  height: 'auto',
+                }}
+              />
+            </Grid>
+          </Grid>
         </Box>
+      </Container>
+
+      {/* Section 2: 다양한 문제 유형 */}
+      <Container maxWidth="lg" sx={{ py: 10 }}>
+        <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
+          <Grid container spacing={6} alignItems="center">
+            {/* 왼쪽 이미지 */}
+            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Box
+                component="img"
+                src={questionTypesImage}
+                alt="문제 유형"
+                sx={{
+                  width: '80%',
+                  maxWidth: 350,
+                  height: 'auto',
+                }}
+              />
+            </Grid>
+
+            {/* 오른쪽 텍스트 */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h4" fontWeight="bold" mb={4} sx={{ textAlign: 'left' }}>
+                다양한 문제 유형 지원
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 2 }}>
+                객관식, 주관식, 순서 배열형, 빈칸형 문제 등 다양한 유형으로 <br />
+                생성할 수 있어 맞춤형 학습 콘텐츠를 제공합니다.
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
+      </Container>
+
+      {/* Section 3: 큐레카 사용 방법 */}
+      <Container maxWidth="lg" sx={{ py: 10 }}>
+        <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
+          <Grid container spacing={6} alignItems="center">
+            {/* 왼쪽 이미지 */}
+            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Box
+                component="img"
+                src={howToUseImage}
+                alt="큐레카 사용 방법"
+                sx={{
+                  width: '80%',
+                  maxWidth: 400,
+                  height: 'auto',
+                }}
+              />
+            </Grid>
+
+            {/* 오른쪽 텍스트 */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h4" fontWeight="bold" mb={4}>
+                큐레카 사용 방법
+              </Typography>
+              <Box component="ol" sx={{ pl: 3 }}>
+                <Typography component="li" variant="body1" color="text.secondary" mb={2}>
+                  문서 업로드 페이지에서 PDF 파일을 업로드하세요.
+                </Typography>
+                <Typography component="li" variant="body1" color="text.secondary" mb={2}>
+                  요약 결과를 확인하고 문제 생성 버튼을 클릭하세요.
+                </Typography>
+                <Typography component="li" variant="body1" color="text.secondary" mb={2}>
+                  생성된 문제를 검토하고 필요한 경우 수정하세요.
+                </Typography>
+                <Typography component="li" variant="body1" color="text.secondary" mb={2}>
+                  최종 결과를 다운로드하여 활용하세요.
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+      </Container>
+
+      {/* Footer */}
+      <Container maxWidth="md" sx={{ textAlign: 'center', py: 8 }}>
+        <Typography variant="h6" color="text.secondary">
+          지금 바로 Qureka와 함께 새로운 학습 콘텐츠를 만들어보세요!
+        </Typography>
       </Container>
     </Box>
   );
