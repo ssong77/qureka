@@ -1,8 +1,12 @@
 import React from 'react';
-import { Box, Typography, Container, Grid, Button } from '@mui/material';
+import { Container, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { useAuth } from '../contexts/AuthContext';
+
+import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 import examImage from '../assets/images/exam.png';
 import questionTypesImage from '../assets/images/pdf.png';
@@ -21,7 +25,6 @@ function Home() {
     >
       <Header />
 
-      {/* Hero Section */}
       <Container maxWidth="md" sx={{ textAlign: 'center', py: 10 }}>
         <Typography variant="h3" fontWeight="bold" gutterBottom>
           여러분들의 문서 도우미!
@@ -35,8 +38,7 @@ function Home() {
             if (isLoggedIn) {
               navigate('/upload');
             } else {
-              alert('로그인이 필요합니다!');
-              navigate('/login');
+              navigate('/login'); // ✅ 로그인 안한 경우 Login 페이지로 이동
             }
           }}
         >
@@ -44,11 +46,10 @@ function Home() {
         </Button>
       </Container>
 
-      {/* Section 1: 시험 및 퀴즈를 준비해 보세요 */}
+      {/* Section 1 */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
         <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
           <Grid container spacing={6} alignItems="center">
-            {/* 왼쪽 텍스트 */}
             <Grid item xs={12} md={6}>
               <Typography variant="h4" fontWeight="bold" mb={4} sx={{ textAlign: 'left' }}>
                 시험 및 퀴즈를 준비해 보세요
@@ -59,43 +60,30 @@ function Home() {
                 더 빠르고 강력하며 스마트한 도구를 만나보세요.
               </Typography>
             </Grid>
-
-            {/* 오른쪽 이미지 */}
             <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Box
                 component="img"
                 src={examImage}
                 alt="문서 요약"
-                sx={{
-                  width: '800%',
-                  maxWidth: 400,
-                  height: 'auto',
-                }}
+                sx={{ width: '800%', maxWidth: 400, height: 'auto' }}
               />
             </Grid>
           </Grid>
         </Box>
       </Container>
 
-      {/* Section 2: 다양한 문제 유형 */}
+      {/* Section 2 */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
         <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
           <Grid container spacing={6} alignItems="center">
-            {/* 왼쪽 이미지 */}
             <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Box
                 component="img"
                 src={questionTypesImage}
                 alt="문제 유형"
-                sx={{
-                  width: '80%',
-                  maxWidth: 350,
-                  height: 'auto',
-                }}
+                sx={{ width: '80%', maxWidth: 350, height: 'auto' }}
               />
             </Grid>
-
-            {/* 오른쪽 텍스트 */}
             <Grid item xs={12} md={6}>
               <Typography variant="h4" fontWeight="bold" mb={4} sx={{ textAlign: 'left' }}>
                 다양한 문제 유형 지원
@@ -109,25 +97,18 @@ function Home() {
         </Box>
       </Container>
 
-      {/* Section 3: 큐레카 사용 방법 */}
+      {/* Section 3 */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
         <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
           <Grid container spacing={6} alignItems="center">
-            {/* 왼쪽 이미지 */}
             <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Box
                 component="img"
                 src={howToUseImage}
                 alt="큐레카 사용 방법"
-                sx={{
-                  width: '80%',
-                  maxWidth: 400,
-                  height: 'auto',
-                }}
+                sx={{ width: '80%', maxWidth: 400, height: 'auto' }}
               />
             </Grid>
-
-            {/* 오른쪽 텍스트 */}
             <Grid item xs={12} md={6}>
               <Typography variant="h4" fontWeight="bold" mb={4}>
                 큐레카 사용 방법

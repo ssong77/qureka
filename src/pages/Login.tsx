@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Box,
+
   Button,
   Checkbox,
   Container,
@@ -8,13 +8,17 @@ import {
   IconButton,
   InputAdornment,
   TextField,
-  Typography,
-  Link,
+
+
   Paper
 } from '@mui/material';
 import { Visibility, VisibilityOff, Home, Google } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+
 import { useAuth } from '../contexts/AuthContext';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import { Link } from 'react-router-dom';
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -86,7 +90,15 @@ function Login() {
             </Box>
 
             <Typography variant="body2" color="text.secondary" mt={3}>
-              Already using Respondo? <Link href="#" underline="hover">Log in</Link>
+              계정이 없으신가요?{' '}
+              <Link
+                to="/signup"
+                component={Link}
+                underline="hover"
+                sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                회원가입
+              </Link>
             </Typography>
           </Box>
         </Paper>

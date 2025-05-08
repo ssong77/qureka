@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'; 
 import { AppBar, Toolbar, IconButton, Button, Menu, MenuItem, Box, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,12 +24,16 @@ function Header() {
     navigate('/');
   };
 
+  const handleMypage = () => {
+    handleMenuClose();
+    navigate('/mypage');
+  };
+
   return (
     <AppBar position="static" color="transparent" elevation={3}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
           <img src={LogoImage} alt="Logo" style={{ height: 40, marginRight: 8 }} />
-          
         </Box>
 
         <Box>
@@ -46,6 +50,7 @@ function Header() {
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
               >
+                <MenuItem onClick={handleMypage}>마이페이지</MenuItem>
                 <MenuItem onClick={handleLogout}>로그아웃</MenuItem>
               </Menu>
             </>
