@@ -33,7 +33,7 @@ function Header() {
     <AppBar position="static" color="transparent" elevation={3}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <img src={LogoImage} alt="Logo" style={{ height: 40, marginRight: 8 }} />
+          <img src={LogoImage} alt="Logo" style={{ height: 80, marginRight: 8 }} />
         </Box>
 
         <Box>
