@@ -1,26 +1,48 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Home from '../pages/Home';
+// src/AppRouter.tsx
+import React from 'react'
+import { Routes, Route } from 'react-router-dom'
+import SignupPage from '../pages/SignupPage'
+import LoginPage from '../pages/Login'
+import Home from '../pages/Home'
+import UploadPage from '../pages/UploadPage'
+import QuestionCreatePage from '../pages/QuestionCreatePage'
+import MyPage from '../pages/Mypage'
+import PrivateRoute from '../routes/PrivateRoute'
 
-import Login from '../pages/Login';
-import UploadPage from '../pages/UploadPage';
-import QuestionCreatePage from '../pages/QuestionCreatePage';
-import Mypage from '../pages/Mypage';
-import SignupPage from '../pages/SignupPage';
-
-function AppRouter() {
+export default function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/upload" element={<UploadPage />} />
-      <Route path="/question-create" element={<QuestionCreatePage />} />
-      <Route path="/mypage" element={<Mypage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/login" element={<LoginPage />} />
 
-  
+      {/* 보호된 경로 */}
+      <Route
+        path="/upload"
+        element={
+          <PrivateRoute>
+            <UploadPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/question-create"
+        element={
+          <PrivateRoute>
+            <QuestionCreatePage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/mypage"
+        element={
+          <PrivateRoute>
+            <MyPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* 공개 홈 */}
+      <Route path="/" element={<Home />} />
     </Routes>
-  );
+  )
 }
-
-export default AppRouter;

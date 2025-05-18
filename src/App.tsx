@@ -1,8 +1,7 @@
-import React from 'react';
-import AppRouter from './routes/AppRouter';
-import { CssBaseline } from '@mui/material';
-function App() {
-  return <AppRouter />;
-}
+// src/App.tsx
+import React from 'react'
+import AppRouter from './routes/AppRouter'
 
-export default App;
+export default function App() {
+  return <AppRouter />
+}

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+// src/pages/Login.tsx
+import React, { useState } from 'react'
 import {
-
   Button,
   Checkbox,
   Container,
@@ -8,35 +8,43 @@ import {
   IconButton,
   InputAdornment,
   TextField,
+  Paper,
+  Alert,
+  Box,
+  Typography
+} from '@mui/material'
+import { Visibility, VisibilityOff, Home, Google } from '@mui/icons-material'
+import { useNavigate, Link as RouterLink } from 'react-router-dom'
 
+import { useAuth } from '../contexts/AuthContext'
+import { userAPI } from '../services/api'
 
-  Paper
-} from '@mui/material';
-import { Visibility, VisibilityOff, Home, Google } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+export default function Login() {
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const { login } = useAuth()
 
-import { useAuth } from '../contexts/AuthContext';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import { Link } from 'react-router-dom';
+  const handleClickShowPassword = () => setShowPassword(prev => !prev)
 
-function Login() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const navigate = useNavigate();
-  const { login } = useAuth();
-
-  const handleClickShowPassword = () => setShowPassword(!showPassword);
-
-  const handleLogin = () => {
-    if (email === '1234' && password === '1234') {
-      login();
-      navigate('/');
-    } else {
-      alert('아이디 또는 비밀번호가 올바르지 않습니다.');
+  const handleLogin = async () => {
+    setError(null)
+    try {
+      const res = await userAPI.login(email, password)
+      if (res.data.success) {
+        // 실제 응답 구조: { success, token, user }
+        login(res.data.tokens.accessToken, res.data.user)
+        navigate('/')
+      } else {
+        setError(res.data.message || '로그인에 실패했습니다.')
+      }
+    } catch (err: any) {
+      console.error(err)
+      setError(err.response?.data?.message || '서버 오류로 로그인할 수 없습니다.')
     }
-  };
+  }
 
   return (
     <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -46,6 +54,8 @@ function Login() {
             어서오세요!
           </Typography>
 
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
           <Box component="form" noValidate autoComplete="off">
             <TextField
               fullWidth
@@ -53,7 +63,7 @@ function Login() {
               label="Email"
               variant="outlined"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
             />
             <TextField
               fullWidth
@@ -63,7 +73,7 @@ function Login() {
               variant="outlined"
               placeholder="At least 12 characters"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -71,17 +81,24 @@ function Login() {
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
-                ),
+                )
               }}
             />
 
             <Box display="flex" justifyContent="space-between" alignItems="center" mt={1} mb={2}>
               <FormControlLabel control={<Checkbox />} label="로그인 정보 기억" />
-              <Link href="#" underline="none">비밀번호 찾기</Link>
+              <RouterLink to="#" style={{ textDecoration: 'none' }}>비밀번호 찾기</RouterLink>
             </Box>
 
-            <Button variant="contained" color="primary" fullWidth sx={{ mb: 2 }} onClick={handleLogin}>
-              Sign up
+             <Button
+               type="button"                                  
+               variant="contained"
+               color="primary"
+               fullWidth
+               sx={{ mb: 2 }}
+              onClick={handleLogin}
+             >
+              Sign in
             </Button>
 
             <Box display="flex" justifyContent="center" gap={2} mt={1}>
@@ -91,20 +108,13 @@ function Login() {
 
             <Typography variant="body2" color="text.secondary" mt={3}>
               계정이 없으신가요?{' '}
-              <Link
-                to="/signup"
-                component={Link}
-                underline="hover"
-                sx={{ cursor: 'pointer', fontWeight: 'bold' }}
-              >
+              <RouterLink to="/signup" style={{ fontWeight: 'bold', textDecoration: 'underline' }}>
                 회원가입
-              </Link>
+              </RouterLink>
             </Typography>
           </Box>
         </Paper>
       </Container>
     </Box>
-  );
+  )
 }
-
-export default Login;

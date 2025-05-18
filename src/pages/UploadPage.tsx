@@ -1,234 +1,201 @@
-import React, { useState } from 'react';
+// src/pages/UploadPage.tsx
+import React, { useState } from 'react'
 import {
-  Container, Select, MenuItem,
-  FormControl, InputLabel, Button, Tabs, Tab, Paper, TextField,
-  Snackbar, Alert
-} from '@mui/material';
-import { CloudUpload } from '@mui/icons-material';
-import Header from '../components/Header';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
-import { useNavigate } from 'react-router-dom';
+  Container,
+  Button,
+  Paper,
+  TextField,
+  Snackbar,
+  Alert,
+  Box,
+  Typography,
+  Tabs,
+  Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  LinearProgress,
+  Grid
+} from '@mui/material'
+import { CloudUpload } from '@mui/icons-material'
+import Header from '../components/Header'
+import { useAuth } from '../contexts/AuthContext'
+import { aiSummaryAPI, aiQuestionAPI } from '../services/api'
+import { useNavigate } from 'react-router-dom'
 
-function UploadPage() {
-  const [mainTab, setMainTab] = useState<'summary' | 'problem'>('summary');
-  const [subTab, setSubTab] = useState(0);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [summary, setSummary] = useState('');
-  const [summaryGenerated, setSummaryGenerated] = useState(false);
-  const [problemGenerated, setProblemGenerated] = useState(false);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [showAnswer, setShowAnswer] = useState(false);
+type MainTab = 'summary' | 'problem'
+type SummaryPromptKey =
+  | '내용 요약_기본 요약'
+  | '내용 요약_핵심 요약'
+  | '내용 요약_주제 요약'
+  | '내용 요약_목차 요약'
+  | '내용 요약_키워드 요약'
 
-  const [choices, setChoices] = useState('');
-  const [choiceType, setChoiceType] = useState('');
-  const [sequenceCount, setSequenceCount] = useState('');
-  const [blankCount, setBlankCount] = useState('');
-  const navigate = useNavigate();
+export default function UploadPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files?.length) {
-      setFileName(event.target.files[0].name);
+  const [mainTab, setMainTab] = useState<MainTab>('summary')
+  const [file, setFile] = useState<File | null>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
+
+  const summaryPromptKeys: SummaryPromptKey[] = [
+    '내용 요약_기본 요약',
+    '내용 요약_핵심 요약',
+    '내용 요약_주제 요약',
+    '내용 요약_목차 요약',
+    '내용 요약_키워드 요약'
+  ]
+  const summaryLabels = ['기본', '핵심', '주제', '목차', '키워드']
+  const [sumTab, setSumTab] = useState(0)
+  const [summaryType, setSummaryType] = useState(summaryPromptKeys[0])
+  const [sumField, setSumField] = useState('언어')
+  const [sumLevel, setSumLevel] = useState('고등')
+  const [sumSentCount, setSumSentCount] = useState(3)
+
+  const [summaryText, setSummaryText] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+  const [openSumSnackbar, setOpenSumSnackbar] = useState(false)
+
+  const questionPromptKeys = [
+    '문제 생성_n지 선다형',
+    '문제 생성_순서 배열형',
+    '문제 생성_빈칸 채우기형',
+    '문제 생성_참거짓형',
+    '문제 생성_단답형',
+    '문제 생성_서술형'
+  ]
+  const questionLabels = ['선다형', '순서 배열형', '빈칸 채우기형', '참거짓형', '단답형', '서술형']
+  const [qTab, setQTab] = useState(0)
+  const [qField, setQField] = useState('언어')
+  const [qLevel, setQLevel] = useState('고등')
+  const [qCount, setQCount] = useState(3)
+  const [optCount, setOptCount] = useState(4)
+  const [blankCount, setBlankCount] = useState(1)
+
+  const [questionText, setQuestionText] = useState<string>('')
+  const [questionLoading, setQuestionLoading] = useState(false)
+  const [openQSnackbar, setOpenQSnackbar] = useState(false)
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null
+    setFile(f)
+    setFileName(f?.name ?? null)
+  }
+
+  const handleGenerateSummary = async () => {
+    if (!file || !user) return alert('파일 선택 및 로그인 필요')
+    setLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('summary_type', summaryType)
+      fd.append('field', sumField)
+      fd.append('level', sumLevel)
+      fd.append('sentence_count', String(sumSentCount))
+      const res = await aiSummaryAPI.generateSummary(fd)
+      setSummaryText(res.data.summary)
+      setOpenSumSnackbar(true)
+    } catch (e: any) {
+      console.error(e)
+      alert(e.response?.data?.detail || '요약 오류')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  const handleSaveProblem = () => {
-    alert('문제가 저장되었습니다.');
-    navigate('/mypage');
-  };
+  const handleSaveSummary = () => alert('문서 요약이 저장되었습니다.')
 
-  const handleGenerateSummary = () => {
-    setSummary('업로드한 문서를 요약한 내용입니다.\n여기서 사용자가 직접 수정할 수 있습니다.');
-    setSummaryGenerated(true);
-  };
+  const handleGenerateQuestion = async () => {
+    if (!summaryText || !user) return alert('먼저 요약을 생성해주세요')
+    setQuestionLoading(true)
+    try {
+      const payload: any = {
+        generation_type: questionPromptKeys[qTab],
+        summary_text: summaryText,
+        field: qField,
+        level: qLevel,
+        question_count: qCount
+      }
+      if (qTab === 0) payload.choice_count = optCount
+      if (qTab === 1) payload.array_choice_count = optCount
+      if (qTab === 2) payload.blank_count = blankCount
+      const res = await aiQuestionAPI.generateQuestions(payload)
+      setQuestionText(res.data.result)
+      setOpenQSnackbar(true)
+    } catch (e: any) {
+      console.error(e)
+      alert(e.response?.data?.detail || '문제 생성 오류')
+    } finally {
+      setQuestionLoading(false)
+    }
+  }
 
-  const handleProblemGenerate = () => {
-    setProblemGenerated(true);
-  };
-
-  const handleSaveSummary = () => {
-    setOpenSnackbar(true);
-  };
-
-  const renderSelect = (label: string, options: string[]) => {
-    const id = `select-${label}`;
-    return (
-      <FormControl key={label} sx={{ minWidth: 120 }}>
-        <InputLabel id={`${id}-label`}>{label}</InputLabel>
-        <Select labelId={`${id}-label`} id={id} label={label} defaultValue="">
-          {options.map((opt) => (
-            <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    );
-  };
+  const handleSaveQuestion = () => alert('생성된 문제가 저장되었습니다.')
 
   return (
     <>
       <Header />
-      <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh', px: 2, py: 4, pt: '100px' }}>
+      <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh', p: 4, pt: '100px' }}>
         <Container maxWidth="md">
-          <Typography variant="h5" fontWeight="bold" gutterBottom align="center">
-            문서 업로드 및 요약
+          <Typography variant="h5" align="center" mb={3}>
+            문서 업로드 및 {mainTab === 'summary' ? '요약' : '문제 생성'}
           </Typography>
-
-          <Paper variant="outlined" sx={{ border: '2px dashed #ccc', backgroundColor: '#f9f9f9', p: 4, textAlign: 'center', mb: 4 }}>
-            <CloudUpload sx={{ fontSize: 60, color: '#1976d2' }} />
-            <Box mt={2}>
-              <Button component="label" variant="contained">
-                파일 선택
-                <input hidden type="file" onChange={handleFileUpload} />
-              </Button>
-            </Box>
-            {!fileName ? (
-              <Typography variant="body2" mt={2}>또는 파일을 여기로 끌어 놓으세요</Typography>
-            ) : (
-              <Typography variant="h6" fontWeight="bold" mt={2}>{fileName}</Typography>
-            )}
-          </Paper>
-
-          {/* 탭 선택 (요약/문제 생성) */}
-          <Box display="flex" justifyContent="center" mb={3}>
-            <Box display="inline-flex" bgcolor="#e3f2fd" borderRadius="999px" p={0.5}>
-              <Button variant={mainTab === 'summary' ? 'contained' : 'text'} onClick={() => setMainTab('summary')} sx={{ borderRadius: '999px', px: 4 }}>
-                요약
-              </Button>
-              <Button variant={mainTab === 'problem' ? 'contained' : 'text'} onClick={() => setMainTab('problem')} sx={{ borderRadius: '999px', px: 4 }}>
-                문제 생성
-              </Button>
-            </Box>
+          <Box mb={3} display="flex" justifyContent="center">
+            <Button variant={mainTab === 'summary' ? 'contained' : 'text'} onClick={() => setMainTab('summary')} sx={{ mx: 1 }}>요약</Button>
+            <Button variant={mainTab === 'problem' ? 'contained' : 'text'} onClick={() => setMainTab('problem')} sx={{ mx: 1 }}>문제 생성</Button>
           </Box>
-
-          {/* 요약 탭 */}
-          {mainTab === 'summary' && (
+          <Paper variant="outlined" sx={{ border: '2px dashed #ccc', p: 4, textAlign: 'center', mb: 4 }}>
+            <CloudUpload sx={{ fontSize: 60, color: '#1976d2' }} />
+            <Box mt={2}><Button component="label">파일 선택<input hidden type="file" onChange={handleFileUpload} /></Button></Box>
+            {!fileName ? <Typography mt={2}>파일을 드래그하거나 선택하세요</Typography> : <Typography mt={2} fontWeight="bold">{fileName}</Typography>}
+          </Paper>
+          {mainTab === 'summary' ? (
             <>
-              <Box sx={{ border: '1px solid #ccc', borderRadius: 2, backgroundColor: '#fff', mb: 2, boxShadow: 1 }}>
-                <Tabs value={subTab} onChange={(e, v) => setSubTab(v)} variant="fullWidth">
-                  <Tab label="기본 요약" />
-                  <Tab label="핵심 요약" />
-                  <Tab label="주제 요약" />
-                  <Tab label="목차 요약" />
-                  <Tab label="키워드 요약" />
-                </Tabs>
-              </Box>
-              <Box sx={{ mt: 5 }} /> {/* 간격 조정*/}
-              <Grid container spacing={2} mb={4}>
-                <Grid item>{renderSelect('분야', ['언어', '철학'])}</Grid>
-                <Grid item>{renderSelect('난이도', ['고등', '대학'])}</Grid>
+              <Tabs value={sumTab} onChange={(_, v) => { setSumTab(v); setSummaryType(summaryPromptKeys[v]) }} variant="fullWidth" sx={{ mb: 2 }}>
+                {summaryLabels.map((l, i) => <Tab key={i} label={l} />)}
+              </Tabs>
+              <Grid container spacing={2} mb={3}>
+                <Grid item xs={4}><FormControl fullWidth><InputLabel>분야</InputLabel><Select value={sumField} label="분야" onChange={e => setSumField(e.target.value)}>{['언어','과학','사회','경제','인문학','공학'].map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}</Select></FormControl></Grid>
+                <Grid item xs={4}><FormControl fullWidth><InputLabel>난이도</InputLabel><Select value={sumLevel} label="난이도" onChange={e => setSumLevel(e.target.value)}>{['고등','대학'].map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}</Select></FormControl></Grid>
+                <Grid item xs={4}><FormControl fullWidth><InputLabel>문장 수</InputLabel><Select value={sumSentCount} label="문장 수" onChange={e => setSumSentCount(Number(e.target.value))}>{[1,2,3,4,5].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}</Select></FormControl></Grid>
               </Grid>
-
-              {!summaryGenerated ? (
-                <Box textAlign="center" mb={4}>
-                  <Button variant="contained" color="primary" size="large" onClick={handleGenerateSummary}>✦ 문서 요약</Button>
-                </Box>
-              ) : (
-                <>
-                  <Box sx={{ bgcolor: '#fff', borderRadius: 2, p: 3, boxShadow: 2, mb: 2 }}>
-                    <Typography variant="h6" gutterBottom>문서 요약 결과</Typography>
-                    <TextField multiline fullWidth minRows={10} value={summary} onChange={(e) => setSummary(e.target.value)} variant="outlined" />
-                  </Box>
-                  
-                  <Grid container spacing={2} justifyContent="center" mb={4}>
-                    <Grid item><Button variant="outlined" color="secondary" onClick={handleSaveSummary}>요약 내용 저장</Button></Grid>
-                    <Grid item><Button variant="contained" color="primary" onClick={() => setMainTab('problem')}>문제 생성</Button></Grid>
-                  </Grid>
-                </>
-              )}
+              <Box textAlign="center" mb={2}><Button variant="contained" size="large" onClick={handleGenerateSummary} disabled={loading}>문서 요약 생성</Button></Box>
+              {loading && <LinearProgress sx={{ mb: 2 }} />}
+              {summaryText && <>
+                <Box sx={{ bgcolor: '#fff', p: 3, boxShadow: 2, borderRadius: 2, mb: 2 }}><Typography variant="h6" gutterBottom>요약 결과</Typography><TextField fullWidth multiline minRows={8} value={summaryText} onChange={e => setSummaryText(e.target.value)} /></Box>
+                <Box display="flex" justifyContent="center" gap={2} mb={4}><Button variant="outlined" onClick={handleSaveSummary}>문서 요약 저장</Button><Button variant="contained" onClick={() => setMainTab('problem')}>문제 생성으로 이동</Button></Box>
+              </>}
+            </>
+          ) : (
+            <>
+              <Tabs value={qTab} onChange={(_, v) => setQTab(v)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
+                {questionLabels.map((l, i) => <Tab key={i} label={l} />)}
+              </Tabs>
+              <Grid container spacing={2} mb={3}>
+                <Grid item xs={4}><FormControl fullWidth><InputLabel>분야</InputLabel><Select value={qField} label="분야" onChange={e => setQField(e.target.value)}>{['언어','과학','사회','경제','인문학','공학'].map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}</Select></FormControl></Grid>
+                <Grid item xs={4}><FormControl fullWidth><InputLabel>난이도</InputLabel><Select value={qLevel} label="난이도" onChange={e => setQLevel(e.target.value)}>{['고등','대학'].map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}</Select></FormControl></Grid>
+                <Grid item xs={4}><FormControl fullWidth><InputLabel>문제 수</InputLabel><Select value={qCount} label="문제 수" onChange={e => setQCount(Number(e.target.value))}>{[1,2,3,4,5].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}</Select></FormControl></Grid>
+                {qTab === 0 && <Grid item xs={4}><FormControl fullWidth><InputLabel>보기 수</InputLabel><Select value={optCount} label="보기 수" onChange={e => setOptCount(Number(e.target.value))}>{[3,4,5].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}</Select></FormControl></Grid>}
+                {qTab === 1 && <Grid item xs={4}><FormControl fullWidth><InputLabel>배열 개수</InputLabel><Select value={optCount} label="배열 개수" onChange={e => setOptCount(Number(e.target.value))}>{[3,4,5].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}</Select></FormControl></Grid>}
+                {qTab === 2 && <Grid item xs={4}><FormControl fullWidth><InputLabel>빈칸 수</InputLabel><Select value={blankCount} label="빈칸 수" onChange={e => setBlankCount(Number(e.target.value))}>{[1,2,3].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}</Select></FormControl></Grid>}
+              </Grid>
+              <Box textAlign="center" mb={2}><Button variant="contained" onClick={handleGenerateQuestion} disabled={questionLoading}>문제 생성</Button></Box>
+              {questionLoading && <LinearProgress sx={{ mb: 2 }} />}
+              {questionText && <>
+                <Paper sx={{ p: 3, mb: 2, borderRadius: 2, boxShadow: 2, bgcolor: '#e8f0fe' }}>
+                  <Typography variant="h6" gutterBottom>생성된 문제</Typography>
+                  <Typography style={{ whiteSpace: 'pre-wrap' }} color="text.secondary">{questionText}</Typography>
+                </Paper>
+                <Box display="flex" justifyContent="center" gap={2} mb={4}><Button variant="outlined" onClick={handleSaveQuestion}>문제 저장</Button></Box>
+              </>}
             </>
           )}
-
-          {/* 문제 생성 탭 */}
-          {mainTab === 'problem' && (
-            <>
-              <Box sx={{ border: '1px solid #ccc', borderRadius: 2, backgroundColor: '#fff', mb: 2, boxShadow: 1 }}>
-                <Tabs value={subTab} onChange={(e, v) => setSubTab(v)} variant="fullWidth" scrollButtons="auto">
-                  <Tab label="선다형" />
-                  <Tab label="순서 배열형" />
-                  <Tab label="빈칸 채우기형" />
-                  <Tab label="참거짓형" />
-                  <Tab label="단답형" />
-                  <Tab label="서술형" />
-                </Tabs>
-              </Box>
-              <Box sx={{ mt: 5 }} /> {/* 간격 조정*/}
-              <Grid container spacing={2} mb={4}>
-                <Grid item xs={12}>
-                  <Box display="flex" gap={2} flexWrap="wrap">
-                    {subTab === 0 && <>
-                      {renderSelect('분야', ['언어', '과학','사회','경제','인문학','종교','철학','공학'])}
-                      {renderSelect('난이도', ['전공', '비전공'])}
-                      {renderSelect('보기 수', ['4', '5'])}
-                      {renderSelect('답변 형태', ['단답형', '문장형'])}
-                    </>}
-                    {subTab === 1 && <>
-                      {renderSelect('배열 대상 개수', ['3', '4', '5'])}
-                      {renderSelect('보기 설명 포함 여부', ['포함', '미포함'])}
-                    </>}
-                    {subTab === 2 && <>
-                      {renderSelect('빈칸 수', ['1', '2', '3'])}
-                      {renderSelect('단어 길이 제한', ['없음', '10자 이하'])}
-                    </>}
-                    {subTab === 3 && <>
-                      {renderSelect('항목 수', ['3', '5', '10'])}
-                      {renderSelect('설명 포함 여부', ['포함', '미포함'])}
-                    </>}
-                    {subTab === 4 && <>
-                      {renderSelect('정답 글자 수', ['1단어', '2단어'])}
-                      {renderSelect('힌트 제공', ['제공', '미제공'])}
-                    </>}
-                    {subTab === 5 && <>
-                      {renderSelect('채점 기준 제공', ['포함', '미포함'])}
-                      {renderSelect('답안 길이', ['100자', '200자'])}
-                    </>}
-                  </Box>
-                </Grid>
-              </Grid>
-
-              <Box textAlign="center" mb={2}>
-                <Button variant="contained" onClick={handleProblemGenerate}>문제 생성</Button>
-              </Box>
-
-              {problemGenerated && (
-                <Box sx={{ bgcolor: '#e8f0fe', borderRadius: 2, p: 3, boxShadow: 2, mb: 4 }}>
-                  <Typography variant="h6" gutterBottom>생성된 문제 예시</Typography>
-                  <Typography variant="body1" color="text.secondary" mb={2}>
-                  1. 다음 중 디자인 패턴의 정의로 가장 적절하지 않은 것은?
-                  </Typography>
-                  <Typography variant="body2">1. 자주 발생하는 문제에 대해 재사용 가능한 해법을 제공하는 설계 방법</Typography>
-                  <Typography variant="body2">2. 하드웨어 동작을 최적화하기 위한 물리적 구조 설계</Typography>
-                  <Typography variant="body2">3. 소프트웨어 설계 문제 해결을 위한 일반적인 해결 템플릿</Typography>
-                  <Typography variant="body2">4. 객체 간 상호작용을 명시적으로 정의하는 설계 방식</Typography>
-                  <Typography variant="body2" mt={2}><strong>정답:</strong> 2</Typography>
-                  <Button variant="outlined" size="small" sx={{ my: 2 }} onClick={() => setShowAnswer(!showAnswer)}>
-                    정답 보기
-                  </Button>
-                  {showAnswer && (
-                    <Typography variant="body2" mt={2}>
-                      <strong>정답:</strong> 2
-                    </Typography>
-                  )}
-                  <Typography variant="body2"><strong>해설:</strong> 디자인 패턴은 소프트웨어 설계에서 반복적으로 발생하는 문제에 대한 해결책으로, 하드웨어 설계와는 관련이 없습니다.</Typography>
-                  
-                  <Grid container spacing={2} justifyContent="center" mt={2}>
-                    <Grid item><Button variant="outlined" color="secondary">다운로드</Button></Grid>
-                    <Grid item><Button variant="contained" color="primary" onClick={handleSaveProblem}>문제 저장</Button></Grid>
-                  </Grid>
-                </Box>
-              )}
-            </>
-          )}
-
-          <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={() => setOpenSnackbar(false)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-            <Alert severity="success" onClose={() => setOpenSnackbar(false)} sx={{ width: '100%' }}>
-              저장되었습니다!
-            </Alert>
-          </Snackbar>
+          <Snackbar open={openSumSnackbar} autoHideDuration={3000} onClose={() => setOpenSumSnackbar(false)}><Alert severity="success">요약이 완료되었습니다!</Alert></Snackbar>
+          <Snackbar open={openQSnackbar} autoHideDuration={3000} onClose={() => setOpenQSnackbar(false)}><Alert severity="success">문제 생성이 완료되었습니다!</Alert></Snackbar>
         </Container>
       </Box>
     </>
-  );
+  )
 }
-
-export default UploadPage;
