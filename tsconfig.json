@@ -3,6 +3,7 @@
   "compilerOptions": {
     "target": "ESNext",                          // 최신 ES 기능 허용
     "useDefineForClassFields": true,
+    
     "lib": ["DOM", "DOM.Iterable", "ESNext"],     // 브라우저 API + ESNext
     "allowJs": false,
     "skipLibCheck": true,

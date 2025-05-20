@@ -1,17 +1,16 @@
-// src/pages/SignupPage.tsx
 import React, { useState } from 'react'
 import {
   Container,
   Box,
   Typography,
-  Grid,
   TextField,
   Button,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Stack
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
@@ -54,8 +53,7 @@ export default function SignupPage() {
     try {
       const { data } = await userAPI.checkUserid(form.userId)
       alert(data.message)
-    } catch (err) {
-      console.error(err)
+    } catch {
       alert('중복 확인 중 오류가 발생했습니다.')
     }
   }
@@ -71,7 +69,7 @@ export default function SignupPage() {
         userid: form.userId,
         name: form.name,
         age: Number(form.age),
-        gender: form.gender,      // 'male' 또는 'female'
+        gender: form.gender,
         phone: form.phone,
         email: form.email || undefined,
         password: form.password
@@ -79,7 +77,6 @@ export default function SignupPage() {
       alert('회원가입이 완료되었습니다.')
       navigate('/login')
     } catch (err: any) {
-      console.error(err)
       alert('회원가입 실패: ' + (err.response?.data?.message || err.message))
     }
   }
@@ -87,7 +84,10 @@ export default function SignupPage() {
   return (
     <>
       <Header />
-      <Container sx={{ mt: 8 }}>
+      <Container 
+        maxWidth="sm"            // sm: 약 600px 폭 제한
+        sx={{ mt: 8 }}
+      >
         <Box
           component="form"
           onSubmit={handleSubmit}
@@ -96,15 +96,15 @@ export default function SignupPage() {
             borderRadius: 2,
             boxShadow: 3,
             p: 4,
-            maxWidth: 500,
-            mx: 'auto'
           }}
         >
           <Typography variant="h5" align="center" gutterBottom>
             회원가입
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={9}>
+
+          <Stack spacing={3}>
+            {/* 1행: 아이디 + 중복확인 */}
+            <Stack direction="row" spacing={2}>
               <TextField
                 fullWidth
                 required
@@ -113,19 +113,19 @@ export default function SignupPage() {
                 placeholder="사용할 아이디 입력"
                 value={form.userId}
                 onChange={handleChange}
+                sx={{ flex: 1 }}
               />
-            </Grid>
-            <Grid item xs={3}>
               <Button
-                fullWidth
                 variant="outlined"
-                sx={{ height: '100%' }}
                 onClick={handleIdCheck}
+                sx={{ width: 120 }}
               >
                 중복 확인
               </Button>
-            </Grid>
-            <Grid item xs={6}>
+            </Stack>
+
+            {/* 2행: 이름 + 나이 */}
+            <Stack direction="row" spacing={2}>
               <TextField
                 fullWidth
                 required
@@ -134,9 +134,8 @@ export default function SignupPage() {
                 placeholder="이름 입력"
                 value={form.name}
                 onChange={handleChange}
+                sx={{ flex: 1 }}
               />
-            </Grid>
-            <Grid item xs={6}>
               <TextField
                 fullWidth
                 required
@@ -146,10 +145,13 @@ export default function SignupPage() {
                 placeholder="나이 입력"
                 value={form.age}
                 onChange={handleChange}
+                sx={{ flex: 1 }}
               />
-            </Grid>
-            <Grid item xs={6}>
-              <FormControl fullWidth required>
+            </Stack>
+
+            {/* 3행: 성별 + 전화번호 */}
+            <Stack direction="row" spacing={2}>
+              <FormControl fullWidth required sx={{ flex: 1 }}>
                 <InputLabel>성별</InputLabel>
                 <Select
                   name="gender"
@@ -164,8 +166,6 @@ export default function SignupPage() {
                   <MenuItem value="female">여성</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={6}>
               <TextField
                 fullWidth
                 required
@@ -174,49 +174,52 @@ export default function SignupPage() {
                 placeholder="010-1234-5678"
                 value={form.phone}
                 onChange={handleChange}
+                sx={{ flex: 1 }}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                name="email"
-                label="이메일"
-                type="email"
-                placeholder="선택사항"
-                value={form.email}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                required
-                name="password"
-                label="비밀번호"
-                type="password"
-                placeholder="비밀번호 입력"
-                value={form.password}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                required
-                name="confirmPassword"
-                label="비밀번호 확인"
-                type="password"
-                placeholder="비밀번호 재입력"
-                value={form.confirmPassword}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button fullWidth variant="contained" type="submit" size="large">
+            </Stack>
+
+            {/* 4행: 이메일 */}
+            <TextField
+              fullWidth
+              name="email"
+              label="이메일"
+              type="email"
+              placeholder="이메일 입력 (선택사항)"
+              value={form.email}
+              onChange={handleChange}
+            />
+
+            {/* 5행: 비밀번호 */}
+            <TextField
+              fullWidth
+              required
+              name="password"
+              label="비밀번호"
+              type="password"
+              placeholder="비밀번호 입력"
+              value={form.password}
+              onChange={handleChange}
+            />
+
+            {/* 6행: 비밀번호 확인 */}
+            <TextField
+              fullWidth
+              required
+              name="confirmPassword"
+              label="비밀번호 확인"
+              type="password"
+              placeholder="비밀번호 재입력"
+              value={form.confirmPassword}
+              onChange={handleChange}
+            />
+
+            {/* 회원가입 버튼 */}
+            <Box display="flex" justifyContent="center" mt={2}>
+              <Button variant="contained" type="submit" sx={{ width: 200, height: 48 }}>
                 회원가입
               </Button>
-            </Grid>
-          </Grid>
+            </Box>
+          </Stack>
         </Box>
       </Container>
     </>
