@@ -38,7 +38,7 @@ function Header() {
 
         <Box>
           <Link href="#" underline="none" sx={{ mr: 2 }}>
-            About Us
+            실습하기
           </Link>
           {isLoggedIn ? (
             <>

@@ -6,12 +6,14 @@ import LoginPage from '../pages/Login'
 import Home from '../pages/Home'
 import UploadPage from '../pages/UploadPage'
 import QuestionCreatePage from '../pages/QuestionCreatePage'
-import MyPage from '../pages/Mypage'
+import Mypage from '../pages/Mypage'
 import PrivateRoute from '../routes/PrivateRoute'
 
 export default function AppRouter() {
   return (
     <Routes>
+      {/* 공개 경로 */}
+      <Route path="/" element={<Home />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/login" element={<LoginPage />} />
 
@@ -36,13 +38,10 @@ export default function AppRouter() {
         path="/mypage"
         element={
           <PrivateRoute>
-            <MyPage />
+            <Mypage />
           </PrivateRoute>
         }
       />
-
-      {/* 공개 홈 */}
-      <Route path="/" element={<Home />} />
     </Routes>
   )
 }

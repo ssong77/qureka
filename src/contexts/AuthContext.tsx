@@ -1,17 +1,16 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react'
-import api from '../services/api'
+import { backendAPI } from '../services/api'
 
-interface User {
+export interface User {
   id: number
   userid: string
   name: string
-  email: string
+  email?: string
 }
 
 interface AuthContextType {
   isLoggedIn: boolean
-  token: string | null
   user: User | null
   login: (token: string, user: User) => void
   logout: () => void
@@ -19,37 +18,33 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
-  token: null,
   user: null,
   login: () => {},
-  logout: () => {}
+  logout: () => {},
 })
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [token, setToken] = useState<string | null>(null)
   const isLoggedIn = Boolean(token)
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
-    console.log('🔄 복원 시도 — storedToken:', storedToken)
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
-      api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
-      console.log('🔄 Authorization 헤더 복원:', api.defaults.headers.common['Authorization'])
+    const t = localStorage.getItem('token')
+    const u = localStorage.getItem('user')
+    if (t && u) {
+      setToken(t)
+      const parsed: User = JSON.parse(u)
+      setUser(parsed)
+      backendAPI.defaults.headers.common['Authorization'] = `Bearer ${t}`
     }
   }, [])
 
   const login = (newToken: string, newUser: User) => {
-    console.log('🔑 login 호출 — newToken:', newToken)
     setToken(newToken)
     setUser(newUser)
     localStorage.setItem('token', newToken)
     localStorage.setItem('user', JSON.stringify(newUser))
-    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
-    console.log('🔑 Authorization 헤더 설정:', api.defaults.headers.common['Authorization'])
+    backendAPI.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
   }
 
   const logout = () => {
@@ -57,12 +52,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null)
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    delete api.defaults.headers.common['Authorization']
-    console.log('🗝️ logout 호출 — 토큰 및 유저 정보 삭제')
+    delete backendAPI.defaults.headers.common['Authorization']
   }
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, token, user, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

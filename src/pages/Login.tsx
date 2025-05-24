@@ -34,7 +34,7 @@ export default function Login() {
     try {
       const res = await userAPI.login(email, password)
       if (res.data.success) {
-        // 실제 응답 구조: { success, token, user }
+        // 실제 응답 구조: { success, tokens: { accessToken }, user }
         login(res.data.tokens.accessToken, res.data.user)
         navigate('/')
       } else {
@@ -47,14 +47,26 @@ export default function Login() {
   }
 
   return (
-    <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+    <Box
+      sx={{
+        bgcolor: '#f4f2f7',
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+    >
       <Container maxWidth="sm">
         <Paper elevation={3} sx={{ p: 6, textAlign: 'center' }}>
           <Typography variant="h5" fontWeight={600} mb={3}>
             어서오세요!
           </Typography>
 
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
           <Box component="form" noValidate autoComplete="off">
             <TextField
@@ -87,23 +99,31 @@ export default function Login() {
 
             <Box display="flex" justifyContent="space-between" alignItems="center" mt={1} mb={2}>
               <FormControlLabel control={<Checkbox />} label="로그인 정보 기억" />
-              <RouterLink to="#" style={{ textDecoration: 'none' }}>비밀번호 찾기</RouterLink>
+              <RouterLink to="#" style={{ textDecoration: 'none' }}>
+                비밀번호 찾기
+              </RouterLink>
             </Box>
 
-             <Button
-               type="button"                                  
-               variant="contained"
-               color="primary"
-               fullWidth
-               sx={{ mb: 2 }}
+            <Button
+              type="button"
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ mb: 2 }}
               onClick={handleLogin}
-             >
+            >
               Sign in
             </Button>
 
             <Box display="flex" justifyContent="center" gap={2} mt={1}>
-              <IconButton><Google /></IconButton>
-              <IconButton><Home /></IconButton>
+              {/* 구글 로그인 아이콘 */}
+              <IconButton>
+                <Google />
+              </IconButton>
+              {/* 홈 버튼: 클릭 시 "/"로 이동 */}
+              <IconButton component={RouterLink} to="/">
+                <Home />
+              </IconButton>
             </Box>
 
             <Typography variant="body2" color="text.secondary" mt={3}>

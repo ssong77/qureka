@@ -20,7 +20,7 @@ function Home() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(to bottom, #dbeafe, #93c5fd, #bfdbfe)',
+        background: 'linear-gradient(to bottom,rgb(246, 247, 249))',
       }}
     >
       <Header />
