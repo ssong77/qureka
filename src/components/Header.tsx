@@ -1,48 +1,69 @@
-import React, { useState } from 'react'; 
-import { AppBar, Toolbar, IconButton, Button, Menu, MenuItem, Box, Link } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import LogoImage from '../assets/images/큐레카_로고 이미지.png'; // 로고 이미지 경로 예시
+// src/components/Header.tsx
+import React, { useState } from 'react'
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Button,
+  Menu,
+  MenuItem,
+  Box,
+  Typography
+} from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import AccountCircle from '@mui/icons-material/AccountCircle'
+import LogoImage from '../assets/images/큐레카_로고 이미지.png' 
 
-function Header() {
-  const navigate = useNavigate();
-  const { isLoggedIn, logout } = useAuth();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+export default function Header() {
+  const navigate = useNavigate()
+  const { isLoggedIn, logout } = useAuth()
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(e.currentTarget)
+  }
   const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
+    setAnchorEl(null)
+  }
   const handleLogout = () => {
-    logout();
-    handleMenuClose();
-    navigate('/');
-  };
-
+    logout()
+    handleMenuClose()
+    navigate('/')
+  }
   const handleMypage = () => {
-    handleMenuClose();
-    navigate('/mypage');
-  };
+    handleMenuClose()
+    navigate('/mypage')
+  }
 
   return (
     <AppBar position="static" color="transparent" elevation={3}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <img src={LogoImage} alt="Logo" style={{ height: 80, marginRight: 8 }} />
+        {/* 로고 클릭하면 홈으로 */}
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+          onClick={() => navigate('/')}
+        >
+          <img
+            src={LogoImage}
+            alt="큐레카 로고"
+            style={{ height: 80, marginRight: 8 }}
+          />
         </Box>
 
-        <Box>
-          <Link href="#" underline="none" sx={{ mr: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* 실습하기 버튼: react-router로 업로드 페이지 이동 */}
+          <Button
+            variant="text"
+            onClick={() => navigate('/upload')}
+            sx={{ textTransform: 'none', mr: 2 }}
+          >
             실습하기
-          </Link>
+          </Button>
+
           {isLoggedIn ? (
             <>
-              <IconButton onClick={handleMenuOpen}>
+              <IconButton onClick={handleMenuOpen} color="inherit">
                 <AccountCircle fontSize="large" />
               </IconButton>
               <Menu
@@ -55,14 +76,16 @@ function Header() {
               </Menu>
             </>
           ) : (
-            <Button variant="outlined" size="small" onClick={() => navigate('/login')}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => navigate('/login')}
+            >
               로그인
             </Button>
           )}
         </Box>
       </Toolbar>
     </AppBar>
-  );
+  )
 }
-
-export default Header;

@@ -34,20 +34,27 @@ function Home() {
         </Typography>
         <Button
           variant="contained"
-          onClick={() => {
-            if (isLoggedIn) {
-              navigate('/upload');
-            } else {
-              navigate('/login'); // ✅ 로그인 안한 경우 Login 페이지로 이동
-            }
-          }}
-        >
+          size="large"            // MUI 기본 large, medium, small
+            sx={{
+              minWidth: 100,        // 최소 너비
+              height: 50,           // 고정 높이
+              fontSize: '1.1rem',   // 폰트 크기
+            }}
+      
+              onClick={() => {
+                if (isLoggedIn) {
+                  navigate('/upload');
+                } else {
+                  navigate('/login'); // 
+                }
+              }}
+            >
           시작하기!
         </Button>
       </Container>
 
       {/* Section 1 */}
-      <Container maxWidth="lg" sx={{ py: 10 }}>
+      <Container maxWidth="lg" sx={{ py: 10, px: { xs: 2, md: 8 } }}>
         <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
           <Grid container spacing={6} alignItems="center">
             <Grid item xs={12} md={6}>
@@ -73,7 +80,7 @@ function Home() {
       </Container>
 
       {/* Section 2 */}
-      <Container maxWidth="lg" sx={{ py: 10 }}>
+      <Container maxWidth="lg" sx={{ py: 10, px: { xs: 2, md: 8 } }}>
         <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
           <Grid container spacing={6} alignItems="center">
             <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -98,7 +105,7 @@ function Home() {
       </Container>
 
       {/* Section 3 */}
-      <Container maxWidth="lg" sx={{ py: 10 }}>
+      <Container maxWidth="lg" sx={{ py: 10, px: { xs: 2, md: 8 } }}>
         <Box sx={{ bgcolor: '#ffffff', borderRadius: 4, boxShadow: 3, p: 6 }}>
           <Grid container spacing={6} alignItems="center">
             <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center' }}>
