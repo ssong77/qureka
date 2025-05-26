@@ -13,11 +13,11 @@ import { aiSummaryAPI, aiQuestionAPI, userAPI, summaryAPI, questionAPI } from '.
 
 type MainTab = 'summary' | 'problem'
 type SummaryPromptKey =
-  | '내용 요약_기본 요약'
-  | '내용 요약_핵심 요약'
-  | '내용 요약_주제 요약'
-  | '내용 요약_목차 요약'
-  | '내용 요약_키워드 요약'
+   | '내용 요약_기본 요약'
+   | '내용 요약_핵심 요약'
+   | '내용 요약_주제 요약'
+   | '내용 요약_목차 요약'
+   | '내용 요약_키워드 요약'
 
 export default function UploadPage() {
   const { user } = useAuth()
@@ -27,14 +27,19 @@ export default function UploadPage() {
 
   // ── summary 탭
   const summaryPromptKeys: SummaryPromptKey[] = [
-    '내용 요약_기본 요약','내용 요약_핵심 요약','내용 요약_주제 요약',
-    '내용 요약_목차 요약','내용 요약_키워드 요약'
+    '내용 요약_기본 요약',
+    '내용 요약_핵심 요약',
+    '내용 요약_주제 요약',
+    '내용 요약_목차 요약',
+    '내용 요약_키워드 요약',
   ]
   const summaryLabels = ['기본','핵심','주제','목차','키워드']
   const [sumTab, setSumTab] = useState(0)
   const [summaryType, setSummaryType] = useState(summaryPromptKeys[0])
   const [sumField, setSumField] = useState('언어')
   const [sumLevel, setSumLevel] = useState('고등')
+  const [keywordCount, setKeywordCount] = useState(3)
+  const [yourKeywordsArray, setYourKeywordsArray] = useState<string[]>(['키워드1','키워드2','키워드3'])
   const [sumSentCount, setSumSentCount] = useState(3)
   const [summaryText, setSummaryText] = useState('')
   const [loadingSum, setLoadingSum] = useState(false)
@@ -42,8 +47,12 @@ export default function UploadPage() {
 
   // ── problem 탭
   const questionPromptKeys = [
-    '문제 생성_n지 선다형','문제 생성_순서 배열형','문제 생성_빈칸 채우기형',
-    '문제 생성_참거짓형','문제 생성_단답형','문제 생성_서술형'
+    '문제 생성_n지 선다형',
+    '문제 생성_순서 배열형',
+    '문제 생성_참거짓형',
+    '문제 생성_빈칸 채우기형',
+    '문제 생성_단답형',
+    '문제 생성_서술형'
   ]
   const questionLabels = ['선다형','순서 배열형','빈칸 채우기형','참거짓형','단답형','서술형']
   const [qTab, setQTab] = useState(0)
@@ -68,16 +77,22 @@ export default function UploadPage() {
     setLoadingSum(true)
     try {
       const fd = new FormData()
-      fd.append('file', file)
-      fd.append('summary_type', summaryType)
-      fd.append('field', sumField)
-      fd.append('level', sumLevel)
-      fd.append('sentence_count', String(sumSentCount))
+        fd.append('file', file)
+        fd.append('summary_type', summaryType)      // 그대로
+        fd.append('domain', sumField)               // 이전 field → domain
+        fd.append('summary_level', sumLevel)        // 이전 level → summary_level
+        fd.append('char_limit', String(sumSentCount)) // 이전 sentence_count → char_limit
+        // (그리고 topic_count, keyword_count, keywords 도 FormData로 넘겨야 한다면:)
+        fd.append('topic_count', String(optCount))
+        fd.append('keyword_count', String(keywordCount))
+        fd.append('keywords', yourKeywordsArray.join(','))
+
       const res = await aiSummaryAPI.generateSummary(fd)
       setSummaryText(res.data.summary)
     } catch (e: any) {
-      console.error(e)
-      alert(e.response?.data?.detail || '요약 생성 오류')
+      console.error('문제 생성 중 서버 에러:', e.response?.data)
+      // 서버에서 내려온 detail 메시지를 우선 보여 줍니다
+      alert(e.response?.data?.detail || e.response?.data?.error || '문제 생성 중 알 수 없는 오류가 발생했습니다.')
     } finally {
       setLoadingSum(false)
     }
@@ -90,7 +105,7 @@ export default function UploadPage() {
       await summaryAPI.saveSummary({
         userId: user.id,
         fileName,
-        summaryType,
+        summaryType: summaryLabels[sumTab] + ' 요약', // -> '기본 요약', '핵심 요약' 등
         summaryText
       })
       setOpenSumSnackbar(true)
@@ -101,30 +116,49 @@ export default function UploadPage() {
   }
 
   // 문제 생성
-  const handleGenerateQuestion = async () => {
-    if (!summaryText || !user) return alert('요약 후 문제 생성을 눌러주세요')
-    setLoadingQ(true)
-    try {
-      const payload: any = {
-        generation_type: questionPromptKeys[qTab],
-        summary_text: summaryText,
-        field: qField,
-        level: qLevel,
-        question_count: qCount
-      }
-      if (qTab === 0) payload.choice_count = optCount
-      if (qTab === 1) payload.array_choice_count = optCount
-      if (qTab === 2) payload.blank_count = blankCount
+ const handleGenerateQuestion = async () => {
+   if (!summaryText || !user) {
+     return alert('요약 후 문제 생성을 눌러주세요')
+   }
+   setLoadingQ(true)
+   try {
+     // FastAPI가 기대하는 모든 필드를 포함한 페이로드
+     const basePayload: any = {
+       generation_type: questionPromptKeys[qTab],
+       summary_text: summaryText,
+       domain: qField,
+       difficulty: qLevel,
+       question_count: qCount,
+       choice_count: null,
+       choice_format: null,
+       arry_choice_count: null,
+       blank_count: null,
+     }
 
-      const res = await aiQuestionAPI.generateQuestions(payload)
-      setQuestionText(res.data.result)
-    } catch (e: any) {
-      console.error(e)
-      alert(e.response?.data?.detail || '문제 생성 오류')
-    } finally {
-      setLoadingQ(false)
-    }
-  }
+     // 탭별 추가값 설정
+     if (qTab === 0) {
+       basePayload.choice_count  = optCount
+       basePayload.choice_format = '문장형'
+     }
+     if (qTab === 1) {
+       basePayload.arry_choice_count = optCount
+       basePayload.choice_format     = '순서형'
+     }
+     if (qTab === 2) {
+       basePayload.blank_count   = blankCount
+       basePayload.choice_format = '빈칸형'
+     }
+
+     const res = await aiQuestionAPI.generateQuestions(basePayload)
+     setQuestionText(res.data.result)
+   } catch (e: any) {
+     console.error(e)
+     const msg = e.response?.data?.detail?.[0]?.msg || '문제 생성 오류'
+     alert(msg)
+   } finally {
+     setLoadingQ(false)
+   }
+ }
 
   // 문제 저장
   const handleSaveQuestion = async () => {
@@ -133,7 +167,8 @@ export default function UploadPage() {
       await questionAPI.saveQuestion({
         userId: user.id,
         fileName,
-        questionType: questionPromptKeys[qTab],
+      // DB 에 정의된 ENUM: '선다형','순서 배열형',... 으로 정확히 보내기
+        questionType: questionLabels[qTab],
         questionText
       })
       setOpenQSnackbar(true)

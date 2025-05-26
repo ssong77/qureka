@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react'
 import { backendAPI } from '../services/api'
 
@@ -13,14 +12,14 @@ interface AuthContextType {
   isLoggedIn: boolean
   user: User | null
   login: (token: string, user: User) => void
-  logout: () => void
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   user: null,
   login: () => {},
-  logout: () => {},
+  logout: async () => {},
 })
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -33,8 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const u = localStorage.getItem('user')
     if (t && u) {
       setToken(t)
-      const parsed: User = JSON.parse(u)
-      setUser(parsed)
+      setUser(JSON.parse(u))
       backendAPI.defaults.headers.common['Authorization'] = `Bearer ${t}`
     }
   }, [])
@@ -47,7 +45,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     backendAPI.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // 본문 없이 쿠키 기반 로그아웃 호출
+      await backendAPI.post('/auth/logout')
+    } catch (e) {
+      console.warn('로그아웃 API 호출 중 에러', e)
+    }
     setToken(null)
     setUser(null)
     localStorage.removeItem('token')
