@@ -14,12 +14,14 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import AccountCircle from '@mui/icons-material/AccountCircle'
 import LogoImage from '../assets/images/큐레카_로고 이미지.png' 
+import { Avatar } from '@mui/material'
+import { Chip } from '@mui/material'
 
 export default function Header() {
   const navigate = useNavigate()
-  const { isLoggedIn, logout } = useAuth()
+  const { isLoggedIn, logout, user} = useAuth()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-
+ 
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget)
   }
@@ -52,6 +54,14 @@ export default function Header() {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* 홈 버튼: 로고 왼쪽 혹은 실습하기 왼쪽에 배치 */}
+          <Button
+            variant="text"
+            onClick={() => navigate('/')}
+            sx={{ textTransform: 'none', mr: 2 }}
+          >
+            홈
+          </Button>
           {/* 실습하기 버튼: react-router로 업로드 페이지 이동 */}
           <Button
             variant="text"
@@ -63,9 +73,19 @@ export default function Header() {
 
           {isLoggedIn ? (
             <>
-              <IconButton onClick={handleMenuOpen} color="inherit">
-                <AccountCircle fontSize="large" />
-              </IconButton>
+<Chip
+  label={user?.name || '사용자'}
+  onClick={handleMenuOpen}
+  avatar={<Avatar sx={{ bgcolor: 'primary.main' }}>{user?.name?.charAt(0) || 'U'}</Avatar>}
+  variant="outlined"
+  clickable
+  sx={{ 
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: 'action.hover'
+    }
+  }}
+/>
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}

@@ -69,7 +69,7 @@ export default function Mypage() {
   if (error)   return <Box textAlign="center" mt={8}><Alert severity="error">{error}</Alert></Box>
 
   return (
-    <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh' }}>
+    <Box sx={{ bgcolor: 'background.paper', minHeight: '100vh' }}>
       <Header/>
       
       <Box sx={{ pt: '60px', px:4, pb:6, maxWidth:1200, mx:'auto' }}>
