@@ -1,5 +1,4 @@
-// 파일명: UploadPage_Flex.tsx
-
+// src/pages/UploadPage.tsx
 import React, { useState } from 'react'
 import {
   Container,
@@ -17,78 +16,142 @@ import {
   Select,
   MenuItem,
   LinearProgress,
-  Grid,
-  Stack,
+  Grid
 } from '@mui/material'
-import {
-  CloudUpload,
-  Settings as SettingsIcon,
-} from '@mui/icons-material'
+import { CloudUpload } from '@mui/icons-material'
 import Header from '../components/Header'
 import { useAuth } from '../contexts/AuthContext'
-import {
-  aiSummaryAPI,
-  aiQuestionAPI,
-  summaryAPI,
-  questionAPI,
-} from '../services/api'
-import { ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { aiSummaryAPI, aiQuestionAPI, summaryAPI, questionAPI } from '../services/api'
 
 type MainTab = 'summary' | 'problem'
-type SummaryPromptKey =
+
+//
+// ─── 요약 탭용 “AI 호출(한글 프롬프트)” + “DB 저장(한글 ENUM)” 병렬 관리 ─────────────────────────────
+//
+
+// FastAPI(`aiSummaryAPI`)로 보낼 한글 프롬프트 키
+type AiSummaryPromptKey =
   | '내용 요약_기본 요약'
   | '내용 요약_핵심 요약'
   | '내용 요약_주제 요약'
   | '내용 요약_목차 요약'
   | '내용 요약_키워드 요약'
 
+// UI에 탭으로 보여줄 한글 라벨
+const summaryLabels = ['기본', '핵심', '주제', '목차', '키워드']
+
+// FastAPI에게 넘길 “한글 프롬프트” 배열
+const aiSummaryPromptKeys: AiSummaryPromptKey[] = [
+  '내용 요약_기본 요약',
+  '내용 요약_핵심 요약',
+  '내용 요약_주제 요약',
+  '내용 요약_목차 요약',
+  '내용 요약_키워드 요약'
+]
+
+// ────────────────────────────────────────────────────────────────────────────────────
+// Node.js 백엔드(DB)에 저장할 때 넘길 “한글 요약 타입”(예: '기본 요약','핵심 요약'…)
+//   → backend 모델(`Summary.create`) 안에서 내부적으로 영어 코드로 매핑됩니다.
+// ────────────────────────────────────────────────────────────────────────────────────
+
+type DbSummaryPromptKey_Korean =
+  | '기본 요약'
+  | '핵심 요약'
+  | '주제 요약'
+  | '목차 요약'
+  | '키워드 요약'
+
+// “DB 저장 시( summaryAPI.saveSummary )에 넘길 한글 ENUM” 배열
+const dbSummaryPromptKeys_Korean: DbSummaryPromptKey_Korean[] = [
+  '기본 요약',
+  '핵심 요약',
+  '주제 요약',
+  '목차 요약',
+  '키워드 요약'
+]
+
+//
+// ─── 문제 생성 탭용 “AI 호출(한국어)” + “DB 저장(영어 코드)” ───────────────────────────────────
+//
+
+// FastAPI로 보낼 “한국어” 키 문자열 (get_question_prompt에서 이 값을 그대로 구분)
+type AiQuestionPromptKey_Korean =
+  | 'n지 선다형'
+  | '순서 배열형'
+  | '빈칸 채우기형'
+  | '참/거짓형'
+  | '단답형'
+  | '서술형'
+
+// UI 탭 라벨 (한국어 그대로)
+const questionLabels = [
+  'n지 선다형',
+  '순서 배열형',
+  '빈칸 채우기형',
+  '참/거짓형',
+  '단답형',
+  '서술형'
+]
+
+// FastAPI에게 넘길 “한국어” 배열
+const aiQuestionPromptKeys_Korean: AiQuestionPromptKey_Korean[] = [
+  'n지 선다형',
+  '순서 배열형',
+  '빈칸 채우기형',
+  '참/거짓형',
+  '단답형',
+  '서술형'
+]
+
+// DB 저장 시(questionAPI.saveQuestion)에는 영어 코드를 사용
+type DbQuestionPromptKey_English =
+  | 'multiple_choice'
+  | 'sequence'
+  | 'fill_in_the_blank'
+  | 'true_false'
+  | 'short_answer'
+  | 'descriptive'
+
+const dbQuestionPromptKeys_English: DbQuestionPromptKey_English[] = [
+  'multiple_choice',
+  'sequence',
+  'fill_in_the_blank',
+  'true_false',
+  'short_answer',
+  'descriptive'
+]
+
 export default function UploadPage() {
   const { user } = useAuth()
+
+  // ── 공통 상태 ────────────────────────────────────────────────────────
   const [mainTab, setMainTab] = useState<MainTab>('summary')
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
 
-  // ── summary 탭 관련 상태
-  const summaryPromptKeys: SummaryPromptKey[] = [
-    '내용 요약_기본 요약',
-    '내용 요약_핵심 요약',
-    '내용 요약_주제 요약',
-    '내용 요약_목차 요약',
-    '내용 요약_키워드 요약',
-  ]
-  const summaryLabels = ['기본', '핵심', '주제', '목차', '키워드']
+  // ── summary 탭용 상태 ─────────────────────────────────────────────────
+  // sumTab 인덱스를 누르면
+  //   • aiSummaryPromptKeys[sumTab]을 FastAPI로 보내고
+  //   • dbSummaryPromptKeys_Korean[sumTab]을 “DB 저장 시 한글 타입”으로 넘깁니다.
   const [sumTab, setSumTab] = useState(0)
-  const [summaryType, setSummaryType] = useState(summaryPromptKeys[0])
+  const [aiSummaryType, setAiSummaryType] = useState<AiSummaryPromptKey>(
+    aiSummaryPromptKeys[0]
+  )
+  const [dbSummaryTypeKorean, setDbSummaryTypeKorean] = useState<DbSummaryPromptKey_Korean>(
+    dbSummaryPromptKeys_Korean[0]
+  )
+
   const [sumField, setSumField] = useState('언어')
   const [sumLevel, setSumLevel] = useState('고등')
   const [sumSentCount, setSumSentCount] = useState(3)
-  const [keywordCount, setKeywordCount] = useState(3)
-  const [yourKeywordsArray, setYourKeywordsArray] = useState<string[]>([
-    '키워드1',
-    '키워드2',
-    '키워드3',
-  ])
   const [summaryText, setSummaryText] = useState('')
   const [loadingSum, setLoadingSum] = useState(false)
   const [openSumSnackbar, setOpenSumSnackbar] = useState(false)
 
-  // ── problem 탭 관련 상태
-  const questionPromptKeys = [
-    '문제 생성_n지 선다형',
-    '문제 생성_순서 배열형',
-    '문제 생성_참거짓형',
-    '문제 생성_빈칸 채우기형',
-    '문제 생성_단답형',
-    '문제 생성_서술형',
-  ]
-  const questionLabels = [
-    '선다형',
-    '순서 배열형',
-    '빈칸 채우기형',
-    '참거짓형',
-    '단답형',
-    '서술형',
-  ]
+  // ── problem 탭용 상태 ─────────────────────────────────────────────────
+  // qTab 인덱스를 누르면
+  //   • aiQuestionPromptKeys_Korean[qTab]을 FastAPI로 보내고
+  //   • dbQuestionPromptKeys_English[qTab]을 “DB 저장 시 영어 코드”로 넘깁니다.
   const [qTab, setQTab] = useState(0)
   const [qField, setQField] = useState('언어')
   const [qLevel, setQLevel] = useState('고등')
@@ -99,118 +162,116 @@ export default function UploadPage() {
   const [loadingQ, setLoadingQ] = useState(false)
   const [openQSnackbar, setOpenQSnackbar] = useState(false)
 
-  // 파일 선택 핸들러
+  // ── 파일 선택 핸들러 ───────────────────────────────────────────────────
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null
     setFile(f)
     setFileName(f?.name ?? null)
   }
 
-  // 요약 생성
+  // ── 요약 생성 핸들러( FastAPI 호출 ) ─────────────────────────────────────
   const handleGenerateSummary = async () => {
     if (!file || !user) {
-      alert('파일 선택 및 로그인 필요')
-      return
+      return alert('파일 선택 및 로그인 필요')
     }
     setLoadingSum(true)
+
     try {
       const fd = new FormData()
       fd.append('file', file)
-      fd.append('summary_type', summaryType)
-      fd.append('domain', sumField)
-      fd.append('summary_level', sumLevel)
-      fd.append('char_limit', String(sumSentCount))
-      fd.append('topic_count', String(keywordCount))
-      fd.append('keyword_count', String(keywordCount))
-      fd.append('keywords', yourKeywordsArray.join(','))
+
+      // ★ AI에게는 “한글 프롬프트”만 보내야 FastAPI 내부에서 정상 동작합니다.
+      fd.append('summary_type', aiSummaryType)
+      fd.append('field', sumField)
+      fd.append('level', sumLevel)
+      fd.append('sentence_count', String(sumSentCount))
 
       const res = await aiSummaryAPI.generateSummary(fd)
       setSummaryText(res.data.summary)
-    } catch (e: any) {
-      console.error('요약 생성 중 서버 에러:', e.response?.data)
-      alert(
-        e.response?.data?.detail ||
-          e.response?.data?.error ||
-          '요약 생성 중 알 수 없는 오류가 발생했습니다.'
-      )
+    } catch (err: any) {
+      console.error(err)
+      alert(err.response?.data?.detail || '요약 생성 오류')
     } finally {
       setLoadingSum(false)
     }
   }
 
-  // 요약 저장
+  // ── 요약 저장 핸들러( Node.js 백엔드 호출 ) ───────────────────────────────
   const handleSaveSummary = async () => {
-    if (!user || !fileName) return
+    if (!user || !fileName) {
+      return
+    }
+
     try {
+      // ★ “DB 저장”에는 한글 요약 타입(예: '기본 요약')만 넘깁니다.
+      //    backend 모델(Summary.create) 내부에서 English-ENUM('basic','key_points',…)으로 매핑해 줍니다.
       await summaryAPI.saveSummary({
         userId: user.id,
         fileName,
-        summaryType: summaryLabels[sumTab] + ' 요약',
+        summaryType: dbSummaryTypeKorean,
         summaryText,
       })
       setOpenSumSnackbar(true)
-    } catch (e) {
-      console.error('saveSummary error:', e)
+    } catch (err) {
+      console.error('saveSummary error:', err)
       alert('요약 저장 중 오류')
     }
   }
 
-  // 문제 생성
+  // ── 문제 생성 핸들러( FastAPI 호출 ) ─────────────────────────────────────
   const handleGenerateQuestion = async () => {
     if (!summaryText || !user) {
       return alert('요약 후 문제 생성을 눌러주세요')
     }
     setLoadingQ(true)
+
     try {
-      const basePayload: any = {
-        generation_type: questionPromptKeys[qTab],
+      // AI에게 넘길 payload: aiQuestionPromptKeys_Korean[qTab] (한국어) + 나머지 필드들
+      const payload: any = {
+        generation_type: `문제 생성_${aiQuestionPromptKeys_Korean[qTab]}`,
         summary_text: summaryText,
-        domain: qField,
-        difficulty: qLevel,
+        field: qField,
+        level: qLevel,
         question_count: qCount,
-        choice_count: null,
-        choice_format: null,
-        arry_choice_count: null,
-        blank_count: null,
       }
 
       if (qTab === 0) {
-        basePayload.choice_count = optCount
-        basePayload.choice_format = '문장형'
+        payload.choice_count = optCount
+      } else if (qTab === 1) {
+        payload.array_choice_count = optCount
+      } else if (qTab === 2) {
+        payload.blank_count = blankCount
       }
-      if (qTab === 1) {
-        basePayload.arry_choice_count = optCount
-        basePayload.choice_format = '순서형'
-      }
-      if (qTab === 2) {
-        basePayload.blank_count = blankCount
-        basePayload.choice_format = '빈칸형'
-      }
+      // qTab 3~5는 추가 파라미터 없이 “참/거짓형” 등 한국어로 보내면 FastAPI가 처리
 
-      const res = await aiQuestionAPI.generateQuestions(basePayload)
+      const res = await aiQuestionAPI.generateQuestions(payload)
       setQuestionText(res.data.result)
-    } catch (e: any) {
-      console.error(e)
-      const msg = e.response?.data?.detail?.[0]?.msg || '문제 생성 오류'
-      alert(msg)
+    } catch (err: any) {
+      console.error(err)
+      alert(err.response?.data?.detail || '문제 생성 오류')
     } finally {
       setLoadingQ(false)
     }
   }
 
-  // 문제 저장
+  // ── 문제 저장 핸들러( Node.js 백엔드 호출 ) ───────────────────────────────
   const handleSaveQuestion = async () => {
-    if (!user || !fileName) return
+    if (!user || !fileName) {
+      return
+    }
+
     try {
+      
+      // ★ Node.js 백엔드는 한국어 타입을 받아 내부에서 영어코드로 매핑합니다.
       await questionAPI.saveQuestion({
         userId: user.id,
         fileName,
-        questionType: questionLabels[qTab],
+        questionType: aiQuestionPromptKeys_Korean[qTab],
         questionText,
       })
       setOpenQSnackbar(true)
-    } catch (e) {
-      console.error('saveQuestion error:', e)
+    } catch (err) {
+      console.error('saveQuestion error:', err)
       alert('문제 저장 중 오류')
     }
   }
@@ -219,13 +280,13 @@ export default function UploadPage() {
     <>
       <Header />
 
-      <Box sx={{ bgcolor: 'background.paper', minHeight: '100vh', p: 4, pt: '100px' }}>
+      <Box sx={{ bgcolor: '#f4f2f7', minHeight: '100vh', p: 4, pt: '100px' }}>
         <Container maxWidth="md">
           <Typography variant="h5" align="center" mb={3}>
-            문서 업로드 및 {mainTab === 'summary' ? '요약 생성' : '문제 생성'}
+            문서 업로드 및 {mainTab === 'summary' ? '요약' : '문제 생성'}
           </Typography>
 
-          {/* Upload Box */}
+          {/* ── Upload Box ───────────────────────────────────────────────────── */}
           <Paper
             variant="outlined"
             sx={{ border: '2px dashed #ccc', p: 4, textAlign: 'center', mb: 4 }}
@@ -246,68 +307,47 @@ export default function UploadPage() {
             )}
           </Paper>
 
-          {/* Main Tab */}
-<Box mb={5} display="flex" justifyContent="center">
-<Tabs 
-  value={mainTab} 
-  onChange={(event, newValue) => setMainTab(newValue)}
-  sx={{ 
-    minHeight: 48,
-    backgroundColor: 'white',
-    borderRadius: 2,
-    border: '1px solid',
-    borderColor: 'grey.300',
-    boxShadow: 1,
-    '& .MuiTabs-indicator': {
-      height: '100%',
-      backgroundColor: 'primary.main',
-      borderRadius: 2,
-      zIndex: 0,
-    },
-    '& .MuiTab-root': {
-      textTransform: 'none',
-      fontWeight: 600,
-      zIndex: 1,
-      color: 'text.secondary',
-      '&.Mui-selected': {
-        color: 'white',
-      }
-    }
-  }}
->
-    <Tab label="요약 생성" value="summary" sx={{ minWidth: 120 }} />
-    <Tab label="문제 생성" value="problem" sx={{ minWidth: 120 }} />
-  </Tabs>
-</Box>
+          {/* ── Main Tab (요약 / 문제 생성) ─────────────────────────────────────── */}
+          <Box mb={5} display="flex" justifyContent="center">
+            <Button
+              variant={mainTab === 'summary' ? 'contained' : 'text'}
+              onClick={() => setMainTab('summary')}
+              sx={{ mx: 3, minWidth: 120, height: 48 }}
+            >
+              요약 생성
+            </Button>
+            <Button
+              variant={mainTab === 'problem' ? 'contained' : 'text'}
+              onClick={() => setMainTab('problem')}
+              sx={{ mx: 3, minWidth: 120, height: 48 }}
+            >
+              문제 생성
+            </Button>
+          </Box>
 
           {mainTab === 'summary' ? (
             <>
-              {/* ▼ 탭 섹션 - 요약 유형 선택 */}
+              {/* ── summary 세부탭 ──────────────────────────────────────────── */}
               <Box
                 sx={{
-                  mb: 4,
-                  borderRadius: 3,
+                  mb: 6,
+                  borderRadius: 2,
                   overflow: 'hidden',
                   bgcolor: 'background.paper',
-                  boxShadow: theme => (theme.palette.mode === 'light' ? 2 : 4),
-                  border: '1px solid',
-                  borderColor: 'divider',
+                  boxShadow: 1
                 }}
               >
                 <Tabs
                   value={sumTab}
                   onChange={(_, v) => {
                     setSumTab(v)
-                    setSummaryType(summaryPromptKeys[v])
+                    // AI 호출용 한글 프롬프트
+                    setAiSummaryType(aiSummaryPromptKeys[v])
+                    // DB 저장용 한글 ENUM
+                    setDbSummaryTypeKorean(dbSummaryPromptKeys_Korean[v])
                   }}
                   variant="fullWidth"
                   TabIndicatorProps={{ style: { display: 'none' } }}
-                  sx={{
-                    '& .MuiTabs-flexContainer': {
-                      gap: 0.5,
-                      p: 1,
-                    },
-                  }}
                 >
                   {summaryLabels.map((label, idx) => (
                     <Tab
@@ -318,512 +358,110 @@ export default function UploadPage() {
                         color: 'text.secondary',
                         bgcolor: 'transparent',
                         borderRadius: 2,
-                        minHeight: 48,
-                        fontSize: '0.9rem',
-                        fontWeight: 500,
-                        transition: 'all 0.2s ease-in-out',
                         '&.Mui-selected': {
                           bgcolor: 'primary.main',
                           color: 'primary.contrastText',
-                          fontWeight: 600,
-                          transform: 'translateY(-1px)',
-                          boxShadow: 1,
+                          fontWeight: 'bold'
                         },
                         '&:hover': {
-                          bgcolor: theme =>
-                            theme.palette.mode === 'light'
-                              ? 'primary.light'
-                              : 'primary.dark',
-                          color: 'primary.contrastText',
-                          transform: 'translateY(-1px)',
-                        },
+                          bgcolor: 'primary.light',
+                          color: 'primary.contrastText'
+                        }
                       }}
                     />
                   ))}
                 </Tabs>
               </Box>
 
-              {/* ▼ 옵션 선택 섹션 - 세부 설정 */}
-              <Paper
-                elevation={2}
-                sx={{
-                  p: 4,
-                  mb: 4,
-                  borderRadius: 3,
-                  bgcolor: 'background.paper',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  background: theme =>
-                    theme.palette.mode === 'light'
-                      ? 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
-                      : 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 100%)',
-                }}
-              >
-                <Stack spacing={3}>
-                  {/* 헤더 */}
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      pb: 2,
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        p: 1,
-                        borderRadius: 2,
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
+              {/* ── summary 옵션 ──────────────────────────────────────────────── */}
+              <Grid container spacing={2} mb={3}>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>분야</InputLabel>
+                    <Select
+                      value={sumField}
+                      label="분야"
+                      onChange={e => setSumField(e.target.value)}
                     >
-                      <SettingsIcon fontSize="small" />
-                    </Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        color: 'text.primary',
-                        fontWeight: 600,
-                        letterSpacing: '-0.02em',
-                      }}
+                      {['언어', '과학', '사회', '경제', '인문학', '공학'].map(o => (
+                        <MenuItem key={o} value={o}>
+                          {o}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>난이도</InputLabel>
+                    <Select
+                      value={sumLevel}
+                      label="난이도"
+                      onChange={e => setSumLevel(e.target.value)}
                     >
-                      설정 옵션
-                    </Typography>
-                  </Box>
-
-                  {/* 옵션 컨트롤들 */}
-                  <Stack spacing={3}>
-                    {/* 첫 번째 행 - 분야와 난이도 */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        gap: 3,
-                        flexWrap: 'wrap',
-                        '& > *': {
-                          flex: '1 1 240px',
-                          minWidth: '200px',
-                        },
-                      }}
+                      {['고등', '대학'].map(o => (
+                        <MenuItem key={o} value={o}>
+                          {o}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>문장 수</InputLabel>
+                    <Select
+                      value={sumSentCount}
+                      label="문장 수"
+                      onChange={e => setSumSentCount(Number(e.target.value))}
                     >
-                      <FormControl variant="outlined">
-                        <InputLabel
-                          shrink
-                          sx={{
-                            bgcolor: 'background.paper',
-                            px: 1.5,
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                          }}
-                        >
-                          📚 분야
-                        </InputLabel>
-                        <Select
-                          value={sumField}
-                          label="📚 분야"
-                          onChange={e => setSumField(e.target.value)}
-                          sx={{
-                            borderRadius: 2.5,
-                            '& .MuiOutlinedInput-root': {
-                              transition: 'all 0.2s ease-in-out',
-                              '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
-                              },
-                            },
-                          }}
-                        >
-                          {['언어', '과학', '사회', '경제', '인문학', '공학'].map(
-                            option => (
-                              <MenuItem
-                                key={option}
-                                value={option}
-                                sx={{
-                                  borderRadius: 1.5,
-                                  mx: 1,
-                                  my: 0.5,
-                                  transition: 'all 0.15s ease-in-out',
-                                  '&:hover': {
-                                    bgcolor: 'primary.light',
-                                    color: 'primary.contrastText',
-                                    transform: 'translateX(4px)',
-                                  },
-                                }}
-                              >
-                                {option}
-                              </MenuItem>
-                            )
-                          )}
-                        </Select>
-                      </FormControl>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <MenuItem key={n} value={n}>
+                          {n}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
 
-                      <FormControl variant="outlined">
-                        <InputLabel
-                          shrink
-                          sx={{
-                            bgcolor: 'background.paper',
-                            px: 1.5,
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                          }}
-                        >
-                          🎯 난이도
-                        </InputLabel>
-                        <Select
-                          value={sumLevel}
-                          label="🎯 난이도"
-                          onChange={e => setSumLevel(e.target.value)}
-                          sx={{
-                            borderRadius: 2.5,
-                            '& .MuiOutlinedInput-root': {
-                              transition: 'all 0.2s ease-in-out',
-                              '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
-                              },
-                            },
-                          }}
-                        >
-                          {['고등', '대학'].map(option => (
-                            <MenuItem
-                              key={option}
-                              value={option}
-                              sx={{
-                                borderRadius: 1.5,
-                                mx: 1,
-                                my: 0.5,
-                                transition: 'all 0.15s ease-in-out',
-                                '&:hover': {
-                                  bgcolor: 'primary.light',
-                                  color: 'primary.contrastText',
-                                  transform: 'translateX(4px)',
-                                },
-                              }}
-                            >
-                              {option}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
-
-                    {/* 두 번째 행 - 문장 수와 키워드 개수 */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        gap: 3,
-                        flexWrap: 'wrap',
-                        '& > *': {
-                          flex: '1 1 240px',
-                          minWidth: '200px',
-                        },
-                      }}
-                    >
-                      <FormControl variant="outlined">
-                        <InputLabel
-                          shrink
-                          sx={{
-                            bgcolor: 'background.paper',
-                            px: 1.5,
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                          }}
-                        >
-                          📝 문장 수
-                        </InputLabel>
-                        <Select
-                          value={sumSentCount}
-                          label="📝 문장 수"
-                          onChange={e => setSumSentCount(Number(e.target.value))}
-                          sx={{
-                            borderRadius: 2.5,
-                            '& .MuiOutlinedInput-root': {
-                              transition: 'all 0.2s ease-in-out',
-                              '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
-                              },
-                            },
-                          }}
-                        >
-                          {[1, 2, 3, 4, 5].map(num => (
-                            <MenuItem
-                              key={num}
-                              value={num}
-                              sx={{
-                                borderRadius: 1.5,
-                                mx: 1,
-                                my: 0.5,
-                                transition: 'all 0.15s ease-in-out',
-                                '&:hover': {
-                                  bgcolor: 'primary.light',
-                                  color: 'primary.contrastText',
-                                  transform: 'translateX(4px)',
-                                },
-                              }}
-                            >
-                              {num}개
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-
-                      <FormControl variant="outlined">
-                        <InputLabel
-                          shrink
-                          sx={{
-                            bgcolor: 'background.paper',
-                            px: 1.5,
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                          }}
-                        >
-                          🔑 키워드 개수
-                        </InputLabel>
-                        <Select
-                          value={keywordCount}
-                          label="🔑 키워드 개수"
-                          onChange={e => setKeywordCount(Number(e.target.value))}
-                          sx={{
-                            borderRadius: 2.5,
-                            '& .MuiOutlinedInput-root': {
-                              transition: 'all 0.2s ease-in-out',
-                              '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
-                              },
-                            },
-                          }}
-                        >
-                          {[1, 2, 3, 4, 5].map(num => (
-                            <MenuItem
-                              key={num}
-                              value={num}
-                              sx={{
-                                borderRadius: 1.5,
-                                mx: 1,
-                                my: 0.5,
-                                transition: 'all 0.15s ease-in-out',
-                                '&:hover': {
-                                  bgcolor: 'primary.light',
-                                  color: 'primary.contrastText',
-                                  transform: 'translateX(4px)',
-                                },
-                              }}
-                            >
-                              {num}개
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
-                  </Stack>
-                </Stack>
-              </Paper>
-
-              {/* ▼ 요약 생성 버튼 */}
-              <Stack direction="row" justifyContent="center" sx={{ mb: 3 }}>
+              <Box textAlign="center" mb={2}>
                 <Button
                   variant="contained"
                   onClick={handleGenerateSummary}
                   disabled={loadingSum}
-                  size="large"
-                  sx={{
-                    borderRadius: 3,
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    background: theme =>
-                      theme.palette.mode === 'light'
-                        ? 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)'
-                        : 'linear-gradient(45deg, #1565C0 30%, #0277BD 90%)',
-                    boxShadow: '0 4px 15px rgba(33, 150, 243, 0.3)',
-                    transition: 'all 0.3s ease-in-out',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 25px rgba(33, 150, 243, 0.4)',
-                    },
-                    '&:active': {
-                      transform: 'translateY(0)',
-                    },
-                  }}
                 >
-                  ✨ 요약 생성
+                  요약 생성
                 </Button>
-              </Stack>
+              </Box>
+              {loadingSum && <LinearProgress sx={{ mb: 2 }} />}
 
-              {/* 로딩 인디케이터 */}
-              {loadingSum && (
-                <Box sx={{ mb: 3 }}>
-                  <LinearProgress
-                    sx={{
-                      borderRadius: 1,
-                      height: 6,
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 1,
-                      },
-                    }}
-                  />
-                </Box>
-              )}
-
-              {/* ▼ 요약 결과 */}
               {summaryText && (
-                <Paper
-                  elevation={3}
-                  sx={{
-                    p: 4,
-                    mb: 3,
-                    borderRadius: 3,
-                    background: theme =>
-                      theme.palette.mode === 'light'
-                        ? 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
-                        : 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 100%)',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Stack spacing={3}>
-                    {/* 결과 헤더 */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        pb: 2,
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          p: 1,
-                          borderRadius: 2,
-                          bgcolor: 'success.main',
-                          color: 'success.contrastText',
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                      >
-                        📄
-                      </Box>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          color: 'text.primary',
-                          fontWeight: 600,
-                          letterSpacing: '-0.02em',
-                        }}
-                      >
-                        요약 결과
-                      </Typography>
-                    </Box>
-
-                    {/* 텍스트 필드 */}
-                    <TextField
-                      fullWidth
-                      multiline
-                      minRows={8}
-                      value={summaryText}
-                      onChange={e => setSummaryText(e.target.value)}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          bgcolor: 'background.default',
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'primary.main',
-                          },
-                        },
-                      }}
-                    />
-
-                    {/* 액션 버튼들 */}
-                    <Stack direction="row" justifyContent="center" spacing={2} sx={{ pt: 1 }}>
-                      <Button
-                        variant="outlined"
-                        onClick={handleSaveSummary}
-                        sx={{
-                          borderRadius: 2.5,
-                          px: 3,
-                          py: 1,
-                          textTransform: 'none',
-                          fontWeight: 500,
-                          transition: 'all 0.2s ease-in-out',
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: 2,
-                          },
-                        }}
-                      >
-                        💾 요약 저장
-                      </Button>
-                      <Button
-                        variant="contained"
-                        onClick={() => setMainTab('problem')}
-                        sx={{
-                          borderRadius: 2.5,
-                          px: 3,
-                          py: 1,
-                          textTransform: 'none',
-                          fontWeight: 500,
-                          transition: 'all 0.2s ease-in-out',
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: 4,
-                          },
-                        }}
-                      >
-                        🎯 문제 생성
-                      </Button>
-                    </Stack>
-                  </Stack>
+                <Paper sx={{ p: 3, mb: 2, borderRadius: 2, boxShadow: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    요약 결과
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={8}
+                    value={summaryText}
+                    onChange={e => setSummaryText(e.target.value)}
+                  />
+                  <Box display="flex" justifyContent="center" gap={2} mt={2}>
+                    <Button variant="outlined" onClick={handleSaveSummary}>
+                      요약 저장
+                    </Button>
+                    <Button variant="contained" onClick={() => setMainTab('problem')}>
+                      문제 생성
+                    </Button>
+                  </Box>
                 </Paper>
               )}
-
-              {/* ▼ 저장 성공 메시지 */}
-              <Snackbar
-                open={openSumSnackbar}
-                autoHideDuration={3000}
-                onClose={() => setOpenSumSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-              >
-                <Alert
-                  severity="success"
-                  sx={{
-                    borderRadius: 2,
-                    '& .MuiAlert-icon': {
-                      fontSize: '1.25rem',
-                    },
-                  }}
-                >
-                  ✅ 요약이 저장되었습니다!
-                </Alert>
-              </Snackbar>
             </>
           ) : (
             <>
-              {/* ▼ 문제 생성 세부탭 */}
+              {/* ── problem 세부탭 ──────────────────────────────────────────── */}
               <Tabs
                 value={qTab}
                 onChange={(_, v) => setQTab(v)}
@@ -839,269 +477,127 @@ export default function UploadPage() {
                       textTransform: 'none',
                       color: 'text.secondary',
                       bgcolor: 'transparent',
-                      borderRadius: 2,
-                      minHeight: 48,
-                      fontSize: '0.9rem',
-                      fontWeight: 500,
-                      transition: 'all 0.2s ease-in-out',
                       '&.Mui-selected': {
                         bgcolor: 'primary.main',
                         color: 'primary.contrastText',
-                        fontWeight: 600,
-                        transform: 'translateY(-1px)',
-                        boxShadow: 1,
+                        fontWeight: 'bold'
                       },
                       '&:hover': {
-                        bgcolor: theme =>
-                          theme.palette.mode === 'light' ? 'primary.light' : 'primary.dark',
-                        color: 'primary.contrastText',
-                        transform: 'translateY(-1px)',
-                      },
+                        bgcolor: 'primary.light',
+                        color: 'primary.contrastText'
+                      }
                     }}
                   />
                 ))}
               </Tabs>
 
-              {/* ▼ 문제 옵션 (Flexbox) */}
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 10 }}>
-                <Box sx={{ flexBasis: '33.3333%' }}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel shrink sx={{ bgcolor: 'background.paper', px: 1 }}>
-                      분야
-                    </InputLabel>
+              {/* ── problem 옵션 ─────────────────────────────────────────────── */}
+              <Grid container spacing={2} mb={10}>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>분야</InputLabel>
                     <Select
                       value={qField}
                       label="분야"
                       onChange={e => setQField(e.target.value)}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'primary.main',
-                          },
-                        },
-                      }}
                     >
-                      {['언어', '과학', '사회', '경제', '인문학', '공학'].map(option => (
-                        <MenuItem
-                          key={option}
-                          value={option}
-                          sx={{
-                            borderRadius: 1,
-                            mx: 1,
-                            my: 0.5,
-                            '&:hover': {
-                              bgcolor: 'primary.light',
-                              color: 'primary.contrastText',
-                            },
-                          }}
-                        >
-                          {option}
+                      {['언어', '과학', '사회', '경제', '인문학', '공학'].map(o => (
+                        <MenuItem key={o} value={o}>
+                          {o}
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
-                </Box>
-
-                <Box sx={{ flexBasis: '33.3333%' }}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel shrink sx={{ bgcolor: 'background.paper', px: 1 }}>
-                      난이도
-                    </InputLabel>
+                </Grid>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>난이도</InputLabel>
                     <Select
                       value={qLevel}
                       label="난이도"
                       onChange={e => setQLevel(e.target.value)}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'primary.main',
-                          },
-                        },
-                      }}
                     >
-                      {['고등', '대학'].map(option => (
-                        <MenuItem
-                          key={option}
-                          value={option}
-                          sx={{
-                            borderRadius: 1,
-                            mx: 1,
-                            my: 0.5,
-                            '&:hover': {
-                              bgcolor: 'primary.light',
-                              color: 'primary.contrastText',
-                            },
-                          }}
-                        >
-                          {option}
+                      {['고등', '대학'].map(o => (
+                        <MenuItem key={o} value={o}>
+                          {o}
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
-                </Box>
-
-                <Box sx={{ flexBasis: '33.3333%' }}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel shrink sx={{ bgcolor: 'background.paper', px: 1 }}>
-                      문제 수
-                    </InputLabel>
+                </Grid>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>문제 수</InputLabel>
                     <Select
                       value={qCount}
                       label="문제 수"
                       onChange={e => setQCount(Number(e.target.value))}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'primary.main',
-                          },
-                        },
-                      }}
                     >
-                      {[1, 2, 3, 4, 5].map(num => (
-                        <MenuItem
-                          key={num}
-                          value={num}
-                          sx={{
-                            borderRadius: 1,
-                            mx: 1,
-                            my: 0.5,
-                            '&:hover': {
-                              bgcolor: 'primary.light',
-                              color: 'primary.contrastText',
-                            },
-                          }}
-                        >
-                          {num}개
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <MenuItem key={n} value={n}>
+                          {n}
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
-                </Box>
+                </Grid>
 
                 {qTab === 0 && (
-                  <Box sx={{ flexBasis: '33.3333%' }}>
-                    <FormControl fullWidth variant="outlined">
-                      <InputLabel shrink sx={{ bgcolor: 'background.paper', px: 1 }}>
-                        보기 수
-                      </InputLabel>
+                  <Grid item xs={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>보기 수</InputLabel>
                       <Select
                         value={optCount}
                         label="보기 수"
                         onChange={e => setOptCount(Number(e.target.value))}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'primary.main',
-                            },
-                          },
-                        }}
                       >
-                        {[3, 4, 5].map(num => (
-                          <MenuItem
-                            key={num}
-                            value={num}
-                            sx={{
-                              borderRadius: 1,
-                              mx: 1,
-                              my: 0.5,
-                              '&:hover': {
-                                bgcolor: 'primary.light',
-                                color: 'primary.contrastText',
-                              },
-                            }}
-                          >
-                            {num}개
+                        {[3, 4, 5].map(n => (
+                          <MenuItem key={n} value={n}>
+                            {n}
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
-                  </Box>
+                  </Grid>
                 )}
                 {qTab === 1 && (
-                  <Box sx={{ flexBasis: '33.3333%' }}>
-                    <FormControl fullWidth variant="outlined">
-                      <InputLabel shrink sx={{ bgcolor: 'background.paper', px: 1 }}>
-                        배열 개수
-                      </InputLabel>
+                  <Grid item xs={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>배열 개수</InputLabel>
                       <Select
                         value={optCount}
                         label="배열 개수"
                         onChange={e => setOptCount(Number(e.target.value))}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'primary.main',
-                            },
-                          },
-                        }}
                       >
-                        {[3, 4, 5].map(num => (
-                          <MenuItem
-                            key={num}
-                            value={num}
-                            sx={{
-                              borderRadius: 1,
-                              mx: 1,
-                              my: 0.5,
-                              '&:hover': {
-                                bgcolor: 'primary.light',
-                                color: 'primary.contrastText',
-                              },
-                            }}
-                          >
-                            {num}개
+                        {[3, 4, 5].map(n => (
+                          <MenuItem key={n} value={n}>
+                            {n}
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
-                  </Box>
+                  </Grid>
                 )}
                 {qTab === 2 && (
-                  <Box sx={{ flexBasis: '33.3333%' }}>
-                    <FormControl fullWidth variant="outlined">
-                      <InputLabel shrink sx={{ bgcolor: 'background.paper', px: 1 }}>
-                        빈칸 수
-                      </InputLabel>
+                  <Grid item xs={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>빈칸 수</InputLabel>
                       <Select
                         value={blankCount}
                         label="빈칸 수"
                         onChange={e => setBlankCount(Number(e.target.value))}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'primary.main',
-                            },
-                          },
-                        }}
                       >
-                        {[1, 2, 3].map(num => (
-                          <MenuItem
-                            key={num}
-                            value={num}
-                            sx={{
-                              borderRadius: 1,
-                              mx: 1,
-                              my: 0.5,
-                              '&:hover': {
-                                bgcolor: 'primary.light',
-                                color: 'primary.contrastText',
-                              },
-                            }}
-                          >
-                            {num}개
+                        {[1, 2, 3].map(n => (
+                          <MenuItem key={n} value={n}>
+                            {n}
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
-                  </Box>
+                  </Grid>
                 )}
-              </Box>
+                {/* qTab === 3(참/거짓형), 4(단답형), 5(서술형)은 추가 옵션 없음 */}
+              </Grid>
 
               <Box textAlign="center" mb={2}>
                 <Button
@@ -1131,16 +627,24 @@ export default function UploadPage() {
                   </Box>
                 </Paper>
               )}
-
-              <Snackbar
-                open={openQSnackbar}
-                autoHideDuration={3000}
-                onClose={() => setOpenQSnackbar(false)}
-              >
-                <Alert severity="success">문제가 저장되었습니다!</Alert>
-              </Snackbar>
             </>
           )}
+
+          {/* ── Snackbars ────────────────────────────────────────────────────── */}
+          <Snackbar
+            open={openSumSnackbar}
+            autoHideDuration={3000}
+            onClose={() => setOpenSumSnackbar(false)}
+          >
+            <Alert severity="success">요약이 저장되었습니다!</Alert>
+          </Snackbar>
+          <Snackbar
+            open={openQSnackbar}
+            autoHideDuration={3000}
+            onClose={() => setOpenQSnackbar(false)}
+          >
+            <Alert severity="success">문제가 저장되었습니다!</Alert>
+          </Snackbar>
         </Container>
       </Box>
     </>
