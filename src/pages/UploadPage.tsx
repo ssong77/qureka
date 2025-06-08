@@ -36,6 +36,8 @@ import SubjectIcon from '@mui/icons-material/Subject'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ShortTextIcon from '@mui/icons-material/ShortText'
 import DescriptionIcon from '@mui/icons-material/Description'
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import { IconButton, Dialog, DialogTitle, DialogContent } from '@mui/material';
 type MainTab = 'summary' | 'problem'
 
 type AiSummaryPromptKey =
@@ -97,7 +99,10 @@ export default function UploadPage() {
   const [mainTab, setMainTab] = useState<MainTab>('summary')
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
-
+  //모달용 state
+  const [openSummaryDialog, setOpenSummaryDialog] = useState(false)
+  const handleOpenSummary = () => setOpenSummaryDialog(true)
+  const handleCloseSummary = () => setOpenSummaryDialog(false)
   // summary state
   const [sumTab, setSumTab] = useState(0)
   const [aiSummaryType, setAiSummaryType] = useState<AiSummaryPromptKey>(
@@ -107,7 +112,7 @@ export default function UploadPage() {
     dbSummaryPromptKeys_Korean[0]
   )
   const [sumField, setSumField] = useState('언어')
-  const [sumLevel, setSumLevel] = useState('고등')
+  const [sumLevel, setSumLevel] = useState('비전공자')
   const [sumSentCount, setSumSentCount] = useState(3)
   const [summaryText, setSummaryText] = useState('')
   const [loadingSum, setLoadingSum] = useState(false)
@@ -116,7 +121,7 @@ export default function UploadPage() {
   // problem state
   const [qTab, setQTab] = useState(0)
   const [qField, setQField] = useState('언어')
-  const [qLevel, setQLevel] = useState('고등')
+  const [qLevel, setQLevel] = useState('비전공자')
   const [qCount, setQCount] = useState(3)
   const [optCount, setOptCount] = useState(4)
   const [blankCount, setBlankCount] = useState(1)
@@ -206,6 +211,21 @@ export default function UploadPage() {
       alert('문제 저장 중 오류')
     }
   }
+ const handleDownloadSummary = () => {
+   const blob = new Blob([summaryText], { type: 'text/plain;charset=utf-8' });
+   const link = document.createElement('a');
+   link.href = URL.createObjectURL(blob);
+   link.download = `${fileName ?? 'result'}_summary.txt`;
+   link.click();
+ };
+
+ const handleDownloadQuestion = () => {
+   const blob = new Blob([questionText], { type: 'text/plain;charset=utf-8' });
+   const link = document.createElement('a');
+   link.href = URL.createObjectURL(blob);
+   link.download = `${fileName ?? 'result'}_questions.txt`;
+   link.click();
+ };
 
   return (
     <>
@@ -429,7 +449,7 @@ export default function UploadPage() {
                             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                           }}
                         >
-                          {['언어', '과학', '사회', '경제', '인문학', '공학'].map(option => (
+                          {['언어', '과학', '사회', '경제', '인문학', '공학','철학','종교'].map(option => (
                             <MenuItem
                               key={option}
                               value={option}
@@ -485,8 +505,8 @@ export default function UploadPage() {
                           }}
                         >
                           {[
-                            { value: '고등', icon: '📚' },
-                            { value: '대학', icon: '🎓' },
+                            { value: '비전공자', icon: '📚' },
+                            { value: '전공자', icon: '🎓' },
                           ].map(({ value, icon }) => (
                             <MenuItem
                               key={value}
@@ -639,25 +659,22 @@ export default function UploadPage() {
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'space-between',
                         gap: 1.5,
                         pb: 2,
                         borderBottom: '1px solid',
                         borderColor: 'divider',
                       }}
                     >
-                      <Box
-                        sx={{
-                          p: 1,
-                          borderRadius: 2,
-                          bgcolor: 'success.main',
-                          color: 'success.contrastText',
-                        }}
-                      >
+                      <Box sx={{ p:1, borderRadius:2, bgcolor:'success.main', color:'success.contrastText' }}>
                         📄
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, flexGrow: 1,}}>
                         요약 결과
                       </Typography>
+                      <Button variant="outlined" size="small" onClick={handleDownloadSummary}>
+                        ⬇️ 다운로드
+                      </Button>
                     </Box>
                     <TextField
                       fullWidth
@@ -758,9 +775,20 @@ export default function UploadPage() {
               >
                 <Typography
                   variant="h6"
-                  sx={{ mb: 2.5, color: '#1e293b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}
+                  sx={{ mb: 2.5, color: '#1e293b', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between',gap: 1 }}
                 >
-                  <SettingsIcon sx={{ color: '#6366f1' }} /> 문제 설정
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                      sx={{ flexGrow: 1 }}        
+                    >
+                      <SettingsIcon sx={{ color: '#6366f1' }} />
+                      문제 설정
+                    </Box>
+                    <IconButton size="small" onClick={handleOpenSummary}>
+                      <ZoomInIcon fontSize="small" />
+                    </IconButton>
                 </Typography>
 
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
@@ -815,7 +843,7 @@ export default function UploadPage() {
                           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                         }}
                       >
-                        {[{ value: '고등', icon: '📚' }, { value: '대학', icon: '🎓' }].map(({ value, icon }) => (
+                        {[{ value: '비전공자', icon: '📚' }, { value: '전공자', icon: '🎓' }].map(({ value, icon }) => (
                           <MenuItem key={value} value={value} sx={{ '&:hover': { backgroundColor: '#f0fdf4' }, '&.Mui-selected': { backgroundColor: '#dcfce7', '&:hover': { backgroundColor: '#bbf7d0' } } }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <span style={{ fontSize: '16px' }}>{icon}</span> {value}
@@ -975,7 +1003,15 @@ export default function UploadPage() {
                   </Typography>
                 </Box>
               </Box>
-
+              {/* Dialog 삽입 */}
+              <Dialog open={openSummaryDialog} onClose={handleCloseSummary} maxWidth="md" fullWidth>
+                <DialogTitle>기반 요약 내용 보기</DialogTitle>
+                <DialogContent dividers>
+                  <Typography component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {summaryText || '먼저 요약을 생성 또는 불러와 주세요.'}
+                  </Typography>
+                </DialogContent>
+              </Dialog>
 
               {/* Generate Question */}
               <Box textAlign="center" mb={2}>
@@ -1009,25 +1045,22 @@ export default function UploadPage() {
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'space-between',
                         gap: 1.5,
                         pb: 2,
                         borderBottom: '1px solid',
                         borderColor: 'divider',
                       }}
                     >
-                      <Box
-                        sx={{
-                          p: 1,
-                          borderRadius: 2,
-                          bgcolor: 'info.main',
-                          color: 'info.contrastText',
-                        }}
-                      >
+                      <Box sx={{ p:1, borderRadius:2, bgcolor:'info.main', color:'info.contrastText' }}>
                         📝
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600,flexGrow: 1,}}>
                         생성된 문제
                       </Typography>
+                      <Button variant="outlined" size="small" onClick={handleDownloadQuestion}>
+                        ⬇️ 다운로드
+                      </Button>
                     </Box>
                     <Typography style={{ whiteSpace: 'pre-wrap' }} color="text.secondary">
                       {questionText}
