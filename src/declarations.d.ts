@@ -4,3 +4,6 @@ declare module '*.png' {
     export default value;
   }
   
+declare module '*.ttf'
+declare module '*.woff'
+declare module '*.woff2'

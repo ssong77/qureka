@@ -30,6 +30,12 @@ import {
 import { 
    CheckCircle, Description 
 } from '@mui/icons-material';
+import ListAltIcon from '@mui/icons-material/ListAlt'
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered'
+import SubjectIcon from '@mui/icons-material/Subject'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import ShortTextIcon from '@mui/icons-material/ShortText'
+import DescriptionIcon from '@mui/icons-material/Description'
 type MainTab = 'summary' | 'problem'
 
 type AiSummaryPromptKey =
@@ -300,7 +306,7 @@ export default function UploadPage() {
                 },
               }}
             >
-              <Tab label="요약" value="summary" sx={{ minWidth: 120 }} />
+              <Tab label="요약 생성" value="summary" sx={{ minWidth: 120 }} />
               <Tab label="문제 생성" value="problem" sx={{ minWidth: 120 }} />
             </Tabs>
           </Box>
@@ -677,150 +683,299 @@ export default function UploadPage() {
                 open={openSumSnackbar}
                 autoHideDuration={3000}
                 onClose={() => setOpenSumSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
               >
                 <Alert severity="success" sx={{ borderRadius: 2 }}>
-                  ✅ 요약이 저장되었습니다!
+                   요약이 저장되었습니다!
                 </Alert>
               </Snackbar>
             </>
           ) : (
             <>
               {/* Problem Tabs */}
-              <Tabs
-                value={qTab}
-                onChange={(_, v) => setQTab(v)}
-                variant="fullWidth"
-                sx={{ mb: 6 }}
-                TabIndicatorProps={{ style: { display: 'none' } }}
+              <Box
+                sx={{
+                  mb: 4,
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  bgcolor: 'background.paper',
+                  boxShadow: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
               >
-                {questionLabels.map((label, idx) => (
-                  <Tab
-                    key={idx}
-                    label={label}
-                    sx={{
-                      textTransform: 'none',
-                      color: 'text.secondary',
-                      bgcolor: 'transparent',
-                      borderRadius: 2,
-                      minHeight: 48,
-                      fontSize: '0.9rem',
-                      fontWeight: 500,
-                      '&.Mui-selected': {
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        fontWeight: 600,
-                      },
-                    }}
-                  />
-                ))}
-              </Tabs>
+                <Tabs
+                  value={qTab}
+                  onChange={(_, v) => setQTab(v)}
+                  variant="fullWidth"
+                  TabIndicatorProps={{ style: { display: 'none' } }}
+                  sx={{ '& .MuiTabs-flexContainer': { gap: 0.5, p: 1 } }}
+                >
+                  {questionLabels.map((label, idx) => (
+                    <Tab
+                      key={idx}
+                      label={label}
+                      sx={{
+                        textTransform: 'none',
+                        color: 'text.secondary',
+                        bgcolor: 'transparent',
+                        borderRadius: 2,
+                        minHeight: 48,
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                        '&.Mui-selected': {
+                          bgcolor: 'primary.main',
+                          color: 'primary.contrastText',
+                          fontWeight: 600,
+                          transform: 'translateY(-1px)',
+                          boxShadow: 1,
+                        },
+                        '&:hover': {
+                          bgcolor: theme =>
+                            theme.palette.mode === 'light'
+                              ? 'primary.light'
+                              : 'primary.dark',
+                          color: 'primary.contrastText',
+                          transform: 'translateY(-1px)',
+                        },
+                      }}
+                    />
+                  ))}
+                </Tabs>
+              </Box>
 
               {/* Problem Options */}
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 10 }}>
-                <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
-                  <FormControl fullWidth>
-                    <InputLabel>분야</InputLabel>
-                    <Select
-                      value={qField}
-                      onChange={e => setQField(e.target.value)}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      {['언어', '과학', '사회', '경제', '인문학', '공학'].map(o => (
-                        <MenuItem key={o} value={o}>
-                          {o}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-                <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
-                  <FormControl fullWidth>
-                    <InputLabel>난이도</InputLabel>
-                    <Select
-                      value={qLevel}
-                      onChange={e => setQLevel(e.target.value)}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      {['고등', '대학'].map(o => (
-                        <MenuItem key={o} value={o}>
-                          {o}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-                <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
-                  <FormControl fullWidth>
-                    <InputLabel>문제 수</InputLabel>
-                    <Select
-                      value={qCount}
-                      onChange={e => setQCount(Number(e.target.value))}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      {[1, 2, 3, 4, 5].map(n => (
-                        <MenuItem key={n} value={n}>
-                          {n}개
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-                {qTab === 0 && (
+              <Box
+                sx={{
+                  background: 'linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%)',
+                  borderRadius: 3,
+                  p: 3,
+                  mb: 3,
+                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  boxShadow:
+                    '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ mb: 2.5, color: '#1e293b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}
+                >
+                  <SettingsIcon sx={{ color: '#6366f1' }} /> 문제 설정
+                </Typography>
+
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                  {/* 분야 */}
                   <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1, color: '#475569', fontWeight: 500 }}>
+                      분야
+                    </Typography>
                     <FormControl fullWidth>
-                      <InputLabel>보기 수</InputLabel>
                       <Select
-                        value={optCount}
-                        onChange={e => setOptCount(Number(e.target.value))}
-                        sx={{ borderRadius: 2 }}
+                        value={qField}
+                        onChange={e => setQField(e.target.value)}
+                        displayEmpty
+                        sx={{
+                          borderRadius: 2,
+                          backgroundColor: '#ffffff',
+                          border: '2px solid transparent',
+                          '&:hover': { borderColor: '#6366f1', backgroundColor: '#fefefe' },
+                          '&.Mui-focused': { borderColor: '#6366f1', boxShadow: '0 0 0 3px rgba(99,102,241,0.1)' },
+                          '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}
                       >
-                        {[3, 4, 5].map(n => (
-                          <MenuItem key={n} value={n}>
-                            {n}개
+                        {['언어','과학','사회','경제','인문학','공학'].map(o => (
+                          <MenuItem key={o} value={o} sx={{ '&:hover': { backgroundColor: '#f1f5f9' }, '&.Mui-selected': { backgroundColor: '#e0e7ff', '&:hover': { backgroundColor: '#c7d2fe' } } }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <SchoolIcon sx={{ fontSize: 18, color: '#6366f1' }} /> {o}
+                            </Box>
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
                   </Box>
-                )}
-                {qTab === 1 && (
+
+                  {/* 난이도 */}
                   <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1, color: '#475569', fontWeight: 500 }}>
+                      난이도
+                    </Typography>
                     <FormControl fullWidth>
-                      <InputLabel>배열 개수</InputLabel>
                       <Select
-                        value={optCount}
-                        onChange={e => setOptCount(Number(e.target.value))}
-                        sx={{ borderRadius: 2 }}
+                        value={qLevel}
+                        onChange={e => setQLevel(e.target.value)}
+                        displayEmpty
+                        sx={{
+                          borderRadius: 2,
+                          backgroundColor: '#ffffff',
+                          border: '2px solid transparent',
+                          '&:hover': { borderColor: '#10b981', backgroundColor: '#fefefe' },
+                          '&.Mui-focused': { borderColor: '#10b981', boxShadow: '0 0 0 3px rgba(16,185,129,0.1)' },
+                          '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}
                       >
-                        {[3, 4, 5].map(n => (
-                          <MenuItem key={n} value={n}>
-                            {n}개
+                        {[{ value: '고등', icon: '📚' }, { value: '대학', icon: '🎓' }].map(({ value, icon }) => (
+                          <MenuItem key={value} value={value} sx={{ '&:hover': { backgroundColor: '#f0fdf4' }, '&.Mui-selected': { backgroundColor: '#dcfce7', '&:hover': { backgroundColor: '#bbf7d0' } } }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <span style={{ fontSize: '16px' }}>{icon}</span> {value}
+                            </Box>
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
                   </Box>
-                )}
+
+                  {/* 문제 수 */}
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1, color: '#475569', fontWeight: 500 }}>
+                      문제 수
+                    </Typography>
+                    <FormControl fullWidth>
+                      <Select
+                        value={qCount}
+                        onChange={e => setQCount(Number(e.target.value))}
+                        displayEmpty
+                        sx={{
+                          borderRadius: 2,
+                          backgroundColor: '#ffffff',
+                          border: '2px solid transparent',
+                          '&:hover': { borderColor: '#f59e0b', backgroundColor: '#fefefe' },
+                          '&.Mui-focused': { borderColor: '#f59e0b', boxShadow: '0 0 0 3px rgba(245,158,11,0.1)' },
+                          '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}
+                      >
+                        {[1,2,3,4,5].map(n => (
+                          <MenuItem key={n} value={n} sx={{ '&:hover': { backgroundColor: '#fffbeb' }, '&.Mui-selected': { backgroundColor: '#fef3c7', '&:hover': { backgroundColor: '#fde68a' } } }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: '50%', backgroundColor: '#f59e0b', color: 'white', fontSize: '12px', fontWeight: 'bold' }}>{n}</Box>
+                              {n}개
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+
+                  {/* 보기 수 (n지선다) */}
+                  {qTab === 0 && (
+                    <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, color: '#475569', fontWeight: 500 }}>
+                        <FormatListNumberedIcon sx={{ fontSize: 18, color: '#f59e0b' }} /> 보기 수
+                      </Typography>
+                      <FormControl fullWidth>
+                        <Select
+                          value={optCount}
+                          onChange={e => setOptCount(Number(e.target.value))}
+                          displayEmpty
+                          sx={{
+                            borderRadius: 2, backgroundColor: '#ffffff', border: '2px solid transparent', '&:hover': { borderColor: '#f59e0b', backgroundColor: '#fefefe' }, '&.Mui-focused': { borderColor: '#f59e0b', boxShadow: '0 0 0 3px rgba(245,158,11,0.1)' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' }, boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          {[2, 3, 4, 5].map(n => (
+                            <MenuItem key={n} value={n} sx={{ '&:hover': { backgroundColor: '#fffbeb' }, '&.Mui-selected': { backgroundColor: '#fef3c7', '&:hover': { backgroundColor: '#fde68a' } } }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: '50%', backgroundColor: '#f59e0b', color: 'white', fontSize: '12px', fontWeight: 'bold' }}>{n}</Box>
+                                {n}개
+                              </Box>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                  )}
+
                 {qTab === 2 && (
                   <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        mb: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        color: '#475569',
+                        fontWeight: 500,
+                      }}
+                    >
+                      <ShortTextIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+                      빈칸 수
+                    </Typography>
                     <FormControl fullWidth>
-                      <InputLabel>빈칸 수</InputLabel>
                       <Select
                         value={blankCount}
                         onChange={e => setBlankCount(Number(e.target.value))}
-                        sx={{ borderRadius: 2 }}
+                        displayEmpty
+                        sx={{
+                          borderRadius: 2,
+                          backgroundColor: '#ffffff',
+                          border: '2px solid transparent',
+                          '&:hover': { borderColor: '#f59e0b', backgroundColor: '#fefefe' },
+                          '&.Mui-focused': {
+                            borderColor: '#f59e0b',
+                            boxShadow: '0 0 0 3px rgba(245,158,11,0.1)',
+                          },
+                          '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}
                       >
                         {[1, 2, 3].map(n => (
-                          <MenuItem key={n} value={n}>
-                            {n}개
+                          <MenuItem
+                            key={n}
+                            value={n}
+                            sx={{
+                              '&:hover': { backgroundColor: '#fffbeb' },
+                              '&.Mui-selected': {
+                                backgroundColor: '#fef3c7',
+                                '&:hover': { backgroundColor: '#fde68a' },
+                              },
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 20,
+                                  height: 20,
+                                  borderRadius: '50%',
+                                  backgroundColor: '#f59e0b',
+                                  color: 'white',
+                                  fontSize: '12px',
+                                  fontWeight: 'bold',
+                                }}
+                              >
+                                {n}
+                              </Box>
+                              {n}개
+                            </Box>
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
                   </Box>
                 )}
+                </Box>
+                <Box
+                  sx={{
+                    mt: 3,
+                    p: 2,
+                    backgroundColor: 'rgba(99,102,241,0.05)',
+                    borderRadius: 2,
+                    border: '1px dashed rgba(99,102,241,0.2)',
+                    mb: 3,
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: '#6366f1', fontWeight: 500 }}>
+                    설정 미리보기: {qField} 분야의 {qLevel} 수준으로 {qCount}문제
+                    {qTab === 0 && `, 보기 ${optCount}개`}
+                    {qTab === 2 && `, 빈칸 ${blankCount}개`}
+                  </Typography>
+                </Box>
               </Box>
+
 
               {/* Generate Question */}
               <Box textAlign="center" mb={2}>
@@ -888,7 +1043,7 @@ export default function UploadPage() {
 
               <Snackbar open={openQSnackbar} autoHideDuration={3000} onClose={() => setOpenQSnackbar(false)}>
                 <Alert severity="success" sx={{ borderRadius: 2 }}>
-                  🎉 문제가 저장되었습니다!
+                   문제가 저장되었습니다!
                 </Alert>
               </Snackbar>
             </>

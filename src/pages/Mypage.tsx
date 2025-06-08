@@ -1,5 +1,7 @@
 // src/pages/Mypage.tsx
 import React, { useEffect, useState } from 'react'
+import { jsPDF } from 'jspdf'
+
 import {
   Box, Typography, Paper,
   IconButton, Menu, MenuItem, Pagination,
@@ -11,6 +13,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import Header from '../components/Header'
 import { useAuth } from '../contexts/AuthContext'
 import { summaryAPI, questionAPI } from '../services/api'
+
 
 interface FileItem {
   id: number
@@ -27,15 +30,28 @@ export default function Mypage() {
   const [questionItems, setQuestionItems] = useState<FileItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // pagination
   const [summaryPage, setSummaryPage] = useState(1)
   const [questionPage, setQuestionPage] = useState(1)
-
-  // 모달 열기 상태
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogTitle, setDialogTitle] = useState('')
   const [dialogText, setDialogText] = useState('')
+
+  // 1) public/fonts 에 올려놓은 TTF를 fetch → base64 → jsPDF에 등록
+  useEffect(() => {
+    fetch('/fonts/NotoSansKR-Regular.ttf')
+      .then(res => res.arrayBuffer())
+      .then(buf => {
+        const b64 = btoa(
+          new Uint8Array(buf)
+            .reduce((data, byte) => data + String.fromCharCode(byte), '')
+        )
+        // @ts-ignore
+        jsPDF.API.addFileToVFS('NotoSansKR-Regular.ttf', b64)
+        // @ts-ignore
+        jsPDF.API.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal')
+      })
+      .catch(console.error)
+  }, [])
 
   useEffect(() => {
     if (!user?.id) {
@@ -71,7 +87,6 @@ export default function Mypage() {
   return (
     <Box sx={{ bgcolor: 'background.paper', minHeight: '100vh' }}>
       <Header/>
-      
       <Box sx={{ pt: '60px', px:4, pb:6, maxWidth:1200, mx:'auto' }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 4 }}>마이페이지</Typography>
         <FileListSection
@@ -79,7 +94,7 @@ export default function Mypage() {
           items={summaryItems}
           currentPage={summaryPage}
           onPageChange={(_,p)=>setSummaryPage(p)}
-          onView={(item)=> {
+          onView={item=>{
             setDialogTitle(item.name)
             setDialogText(item.text)
             setDialogOpen(true)
@@ -90,7 +105,7 @@ export default function Mypage() {
           items={questionItems}
           currentPage={questionPage}
           onPageChange={(_,p)=>setQuestionPage(p)}
-          onView={(item)=> {
+          onView={item=>{
             setDialogTitle(item.name)
             setDialogText(item.text)
             setDialogOpen(true)
@@ -98,38 +113,32 @@ export default function Mypage() {
         />
       </Box>
 
-      {/* 텍스트 보기 모달 */}
       <Dialog open={dialogOpen} onClose={()=>setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{dialogTitle}</DialogTitle>
         <DialogContent dividers>
-          <Typography sx={{ whiteSpace: 'pre-wrap' }}>{dialogText}</Typography>
+          <Typography sx={{ whiteSpace:'pre-wrap' }}>{dialogText}</Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={()=>setDialogOpen(false)}>닫기</Button>
-        </DialogActions>
+        <DialogActions><Button onClick={()=>setDialogOpen(false)}>닫기</Button></DialogActions>
       </Dialog>
     </Box>
   )
 }
 
 function FileListSection({
-  title,
-  items,
-  currentPage,
-  onPageChange,
-  onView,
+  title, items, currentPage, onPageChange, onView
 }: {
   title: string
   items: FileItem[]
   currentPage: number
-  onPageChange: (e:React.ChangeEvent<unknown>, page:number)=>void
-  onView: (item:FileItem)=>void
+  onPageChange: (e: React.ChangeEvent<unknown>, p: number) => void
+  onView: (item: FileItem) => void
 }) {
   const [anchorEl, setAnchorEl] = useState<null|HTMLElement>(null)
   const [activeItem, setActiveItem] = useState<FileItem|null>(null)
   const openMenu = Boolean(anchorEl)
 
-  const handleMenuOpen = (e:React.MouseEvent<HTMLElement>, item:FileItem) => {
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, item: FileItem) => {
+    e.stopPropagation()
     setAnchorEl(e.currentTarget)
     setActiveItem(item)
   }
@@ -139,16 +148,13 @@ function FileListSection({
   }
   const handleDownload = () => {
     if (!activeItem) return
-    const base = activeItem.name.replace(/\.pdf$/i,'')
-    const blob = new Blob([activeItem.text], { type:'text/plain' })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a')
-    a.href     = url
-    a.download = `${base}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    const doc = new jsPDF({ unit:'pt', format:'a4' })
+    doc.setFont('NotoSansKR')
+    doc.setFontSize(12)
+    const lines = doc.splitTextToSize(activeItem.text, 500)
+    doc.text(lines, 40, 60)
+    const filename = activeItem.name.replace(/\.(txt|pdf)?$/i,'') + '.pdf'
+    doc.save(filename)
     handleMenuClose()
   }
 
@@ -179,16 +185,16 @@ function FileListSection({
                 </TableCell>
                 <TableCell align="center">{item.date}</TableCell>
                 <TableCell align="right">
-                  <IconButton size="small" onClick={e=>{ e.stopPropagation(); handleMenuOpen(e,item) }}>
+                  <IconButton size="small" onClick={e=>handleMenuOpen(e,item)}>
                     <MoreVertIcon/>
                   </IconButton>
-                  <Menu anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose}
-                        anchorOrigin={{ vertical:'bottom', horizontal:'right' }}
-                        transformOrigin={{ vertical:'top', horizontal:'right' }}>
+                  <Menu
+                    anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose}
+                    anchorOrigin={{ vertical:'bottom', horizontal:'right' }}
+                    transformOrigin={{ vertical:'top', horizontal:'right' }}
+                  >
                     <MenuItem onClick={handleDownload}>다운로드</MenuItem>
-                    <MenuItem onClick={()=>{ /* TODO: 삭제 */ handleMenuClose() }}>
-                      삭제
-                    </MenuItem>
+                    <MenuItem onClick={()=>{ /* 삭제 기능 */ handleMenuClose() }}>삭제</MenuItem>
                   </Menu>
                 </TableCell>
               </TableRow>
@@ -197,8 +203,7 @@ function FileListSection({
         </Table>
       </TableContainer>
       <Box sx={{ display:'flex', justifyContent:'center', mt:2 }}>
-        <Pagination count={total} page={currentPage} onChange={onPageChange}
-                    shape="rounded" color="primary"/>
+        <Pagination count={total} page={currentPage} onChange={onPageChange} shape="rounded" color="primary"/>
       </Box>
     </Box>
   )
