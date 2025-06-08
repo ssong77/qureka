@@ -1,4 +1,4 @@
-// src/services/api.ts
+// src/services/api.ts 
 import axios from 'axios'
 
 // Node.js 백엔드 (인증·저장·조회)
@@ -39,13 +39,13 @@ export const aiQuestionAPI = {
     }),
 }
 
-// ─── 요약 저장·조회 API (Node.js 백엔드) ─────────────────────────────────────────
+// ─── 요약 저장·조회·삭제 API (Node.js 백엔드) ─────────────────────────────────────────
 export interface SummaryItem {
   selection_id: number
   file_name: string
   summary_type: string
   created_at: string
-  summary_text: string    // ← 추가
+  summary_text: string
 }
 
 export interface GetSummariesResponse {
@@ -57,6 +57,7 @@ export interface GetSummariesResponse {
 export const summaryAPI = {
   getUserSummaries: (userId: number) =>
     backendAPI.get<GetSummariesResponse>(`/summaries/user/${userId}`),
+
   saveSummary: (data: {
     userId: number
     fileName: string
@@ -64,15 +65,18 @@ export const summaryAPI = {
     summaryText: string
   }) =>
     backendAPI.post('/summaries', data),
+
+  deleteSummary: (selectionId: number) =>
+    backendAPI.delete(`/summaries/${selectionId}`),
 }
 
-// ─── 문제 저장·조회 API (Node.js 백엔드) ─────────────────────────────────────────
+// ─── 문제 저장·조회·삭제 API (Node.js 백엔드) ─────────────────────────────────────────
 export interface QuestionItem {
   selection_id: number
   file_name: string
   question_type: string
   created_at: string
-  question_text: string   // ← 추가
+  question_text: string
 }
 
 export interface GetQuestionsResponse {
@@ -84,6 +88,7 @@ export interface GetQuestionsResponse {
 export const questionAPI = {
   getUserQuestions: (userId: number) =>
     backendAPI.get<GetQuestionsResponse>(`/questions/user/${userId}`),
+
   saveQuestion: (data: {
     userId: number
     fileName: string
@@ -91,6 +96,9 @@ export const questionAPI = {
     questionText: string
   }) =>
     backendAPI.post('/questions', data),
+
+  deleteQuestion: (selectionId: number) =>
+    backendAPI.delete(`/questions/${selectionId}`),
 }
 
 export default backendAPI
