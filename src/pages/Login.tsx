@@ -24,6 +24,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [rememberMe, setRememberMe] = useState(false) // 로그인 정보 기억 여부
   const navigate = useNavigate()
   const { login } = useAuth()
 
@@ -32,7 +33,7 @@ export default function Login() {
   const handleLogin = async () => {
     setError(null)
     try {
-      const res = await userAPI.login(email, password)
+      const res = await userAPI.login(email, password, rememberMe)
       if (res.data.success) {
         // 실제 응답 구조: { success, tokens: { accessToken }, user }
         login(res.data.tokens.accessToken, res.data.user)
@@ -98,7 +99,15 @@ export default function Login() {
             />
 
             <Box display="flex" justifyContent="space-between" alignItems="center" mt={1} mb={2}>
-              <FormControlLabel control={<Checkbox />} label="로그인 정보 기억" />
+            <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                  />
+                }
+                label="로그인 정보 기억"
+              />
               <RouterLink to="#" style={{ textDecoration: 'none' }}>
                 비밀번호 찾기
               </RouterLink>

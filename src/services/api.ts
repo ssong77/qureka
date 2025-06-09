@@ -19,8 +19,9 @@ export const userAPI = {
     backendAPI.post('/users/check-userid', { userid }),
   register: (data: any) =>
     backendAPI.post('/users/register', data),
-  login: (userid: string, password: string) =>
-    backendAPI.post('/users/login', { userid, password }),
+  //rememberMe 옵션을 추가한 로그인 API
+  login: (userid: string, password: string, rememberMe: boolean) =>
+    backendAPI.post('/users/login', { userid, password, rememberMe}),
 }
 
 // AI 요약 생성 API (FastAPI)
