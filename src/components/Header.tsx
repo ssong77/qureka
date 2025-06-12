@@ -58,7 +58,7 @@ export default function Header() {
           <Button
             variant="text"
             onClick={() => navigate('/')}
-            sx={{ textTransform: 'none', mr: 2 }}
+            sx={{ textTransform: 'none', mr: 2, fontSize: '1.2rem' }}
           >
             홈
           </Button>
@@ -66,26 +66,26 @@ export default function Header() {
           <Button
             variant="text"
             onClick={() => navigate('/upload')}
-            sx={{ textTransform: 'none', mr: 2 }}
+            sx={{ textTransform: 'none', mr: 2,fontSize: '1.2rem' }}
           >
             실습하기
           </Button>
 
           {isLoggedIn ? (
             <>
-<Chip
-  label={user?.name || '사용자'}
-  onClick={handleMenuOpen}
-  avatar={<Avatar sx={{ bgcolor: 'primary.main' }}>{user?.name?.charAt(0) || 'U'}</Avatar>}
-  variant="outlined"
-  clickable
-  sx={{ 
-    cursor: 'pointer',
-    '&:hover': {
-      backgroundColor: 'action.hover'
-    }
-  }}
-/>
+            <Chip
+              label={user?.name || '사용자'}
+              onClick={handleMenuOpen}
+              avatar={<Avatar sx={{ bgcolor: 'primary.main' }}>{user?.name?.charAt(0) || 'U'}</Avatar>}
+              variant="outlined"
+              clickable
+              sx={{ 
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'action.hover'
+                }
+              }}
+            />
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}

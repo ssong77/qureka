@@ -50,6 +50,9 @@ export default function Mypage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogTitle, setDialogTitle] = useState('')
   const [dialogText, setDialogText] = useState('')
+  // 확인 대화상자 관련 state 추가
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{id: number, type: 'summary' | 'question'} | null>(null);
   const [quizDialogOpen, setQuizDialogOpen] = useState(false)
   const [currentQuizQuestions, setCurrentQuizQuestions] = useState<QuestionItem[]>([])
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string | number }>({})
@@ -152,7 +155,36 @@ export default function Mypage() {
       setSnackbar({ open: true, message: '문제 삭제에 실패했습니다.', severity: 'error' })
     }
   }
-
+  // 삭제 확인 다이얼로그 표시 함수
+  const handleDeleteConfirm = (id: number, type: 'summary' | 'question') => {
+    setItemToDelete({ id, type });
+    setDeleteConfirmOpen(true);
+  };
+  // 실제 삭제 수행 함수
+  const handleDeleteConfirmed = async () => {
+    if (!itemToDelete) return;
+    
+    try {
+      if (itemToDelete.type === 'summary') {
+        await summaryAPI.deleteSummary(itemToDelete.id);
+        setSummaryItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+        setSnackbar({ open: true, message: '요약이 삭제되었습니다.', severity: 'success' });
+      } else {
+        await questionAPI.deleteQuestion(itemToDelete.id);
+        setQuestionItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+        setSnackbar({ open: true, message: '문제가 삭제되었습니다.', severity: 'success' });
+      }
+    } catch {
+      setSnackbar({ 
+        open: true, 
+        message: `${itemToDelete.type === 'summary' ? '요약' : '문제'} 삭제에 실패했습니다.`, 
+        severity: 'error' 
+      });
+    } finally {
+      setDeleteConfirmOpen(false);
+      setItemToDelete(null);
+    }
+  };
   // 퀴즈 채점
   const handleQuizSubmit = () => {
     setQuizSubmitted(true)
@@ -202,6 +234,7 @@ export default function Mypage() {
           open={snackbar.open}
           autoHideDuration={3000}
           onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
           <Alert severity={snackbar.severity} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
             {snackbar.message}
@@ -228,7 +261,7 @@ export default function Mypage() {
             setDialogText(item.text)
             setDialogOpen(true)
           }}
-          onDelete={item => handleDeleteSummary(item.id)}
+          onDelete={item => handleDeleteConfirm(item.id, 'summary')}
         />
 
         <FileListSection
@@ -248,7 +281,7 @@ export default function Mypage() {
             setQuizSubmitted(false)
             setQuizDialogOpen(true)
           }}
-          onDelete={item => handleDeleteQuestion(item.id)}
+          onDelete={item => handleDeleteConfirm(item.id, 'question')}
         />
       </Box>
 
@@ -384,6 +417,31 @@ export default function Mypage() {
           <Button onClick={() => setIncorrectNoteOpen(false)}>닫기</Button>
         </DialogActions>
       </Dialog>
+            {/* 삭제 확인 다이얼로그 - 여기에 추가 */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          삭제 확인
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            정말 이 {itemToDelete?.type === 'summary' ? '요약' : '문제'}을(를) 삭제하시겠습니까?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            삭제한 항목은 복구할 수 없습니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>취소</Button>
+          <Button onClick={handleDeleteConfirmed} color="error" autoFocus>
+            삭제
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
@@ -415,10 +473,21 @@ function FileListSection({
 
   const handleDownload = () => {
     if (!activeItem) return
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' })
-    doc.setFont('NotoSansKR')
-    doc.setFontSize(12)
+    
+    // PDF 인스턴스 생성
+    const doc = new jsPDF({ 
+      unit: 'pt', 
+      format: 'a4',
+      putOnlyUsedFonts: true
+    });
+    console.log('사용 가능한 폰트:', doc.getFontList());
+    // 명시적으로 폰트 설정 (중요!)
+    doc.setFont('NotoSansKR', 'normal');
+    console.log('현재 폰트:', doc.getFont());
+    doc.setFontSize(12);
+    
     let textToDownload = activeItem.text
+    
     if (title === "❓ 생성된 문제" && typeof activeItem.text === 'string') {
       try {
         const data = JSON.parse(activeItem.text)
@@ -428,15 +497,19 @@ function FileListSection({
         })
         textToDownload += `\n정답: ${data.answer ?? (data.options && data.correct_option_index!==undefined ? data.options[data.correct_option_index] : '없음')}\n`
         if (data.explanation) textToDownload += `해설: ${data.explanation}\n`
-      } catch {}
+      } catch(error) {console.error('문제 데이터 처리 중 오류:', error);}
     }
-    const lines = doc.splitTextToSize(textToDownload, 500)
-    doc.text(lines, 40, 60)
+    
+    // 여기에서 텍스트를 한 줄씩 나누고 위치 조정
+    const splitText = doc.splitTextToSize(textToDownload, 500)
+    
+    // UTF-8 인코딩으로 텍스트 처리
+    doc.text(splitText, 40, 60)
+    
     const filename = activeItem.name.replace(/\.(txt|pdf)?$/i, '') + '.pdf'
     doc.save(filename)
     handleMenuClose()
   }
-
   const start = (currentPage - 1) * itemsPerPage
   const pageItems = items.slice(start, start + itemsPerPage)
   const total = Math.ceil(items.length / itemsPerPage)
@@ -478,11 +551,16 @@ function FileListSection({
                         문제 풀기
                       </MenuItem>
                     )}
-                    {onDelete && activeItem && (
-                      <MenuItem onClick={() => { onDelete(activeItem); handleMenuClose() }}>
-                        삭제
-                      </MenuItem>
-                    )}
+                  {onDelete && activeItem && (
+                    <MenuItem onClick={(e) => { 
+                      e.preventDefault(); // 브라우저 기본 동작 방지
+                      e.stopPropagation(); // 이벤트 버블링 방지
+                      onDelete(activeItem); 
+                      handleMenuClose(); 
+                    }}>
+                      삭제
+                    </MenuItem>
+                  )}
                   </Menu>
                 </TableCell>
               </TableRow>
@@ -494,5 +572,6 @@ function FileListSection({
         <Pagination count={total} page={currentPage} onChange={onPageChange} shape="rounded" color="primary" />
       </Box>
     </Box>
+    
   )
 }

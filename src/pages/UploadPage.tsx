@@ -117,6 +117,8 @@ export default function UploadPage() {
   const [summaryText, setSummaryText] = useState('')
   const [loadingSum, setLoadingSum] = useState(false)
   const [openSumSnackbar, setOpenSumSnackbar] = useState(false)
+  const [sumTopicCount, setSumTopicCount] = useState(1) // 주제 요약용
+  const [sumKeywordCount, setSumKeywordCount] = useState(3) // 키워드 요약용
 
   // problem state
   const [qTab, setQTab] = useState(0)
@@ -128,6 +130,9 @@ export default function UploadPage() {
   const [questionText, setQuestionText] = useState('')
   const [loadingQ, setLoadingQ] = useState(false)
   const [openQSnackbar, setOpenQSnackbar] = useState(false)
+  const [optionFormat, setOptionFormat] = useState('단답형') 
+  const [openSumDoneSnackbar, setOpenSumDoneSnackbar] = useState(false)
+  const [openQDoneSnackbar, setOpenQDoneSnackbar] = useState(false)
 
   // handlers
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,15 +151,25 @@ export default function UploadPage() {
       fd.append('field', sumField)
       fd.append('level', sumLevel)
       fd.append('sentence_count', String(sumSentCount))
-      const res = await aiSummaryAPI.generateSummary(fd)
-      setSummaryText(res.data.summary)
-    } catch (e: any) {
-      console.error(e)
-      alert(e.response?.data?.detail || '요약 생성 오류')
-    } finally {
-      setLoadingSum(false)
+        // 주제 요약인 경우 주제 수 추가
+        if (sumTab === 2) {
+          fd.append('topic_count', String(sumTopicCount))
+        }
+        
+        // 키워드 요약인 경우 키워드 수 추가
+        if (sumTab === 4) {
+          fd.append('keyword_count', String(sumKeywordCount))
+        }
+        
+        const res = await aiSummaryAPI.generateSummary(fd)
+        setSummaryText(res.data.summary)
+      } catch (e: any) {
+        console.error(e)
+        alert(e.response?.data?.detail || '요약 생성 오류')
+      } finally {
+        setLoadingSum(false)
+      }
     }
-  }
 
   const handleSaveSummary = async () => {
     if (!user || !fileName) return
@@ -165,7 +180,7 @@ export default function UploadPage() {
         summaryType: dbSummaryTypeKorean,
         summaryText,
       })
-      setOpenSumSnackbar(true)
+      setOpenSumDoneSnackbar(true)
     } catch (e) {
       console.error(e)
       alert('요약 저장 중 오류')
@@ -183,7 +198,10 @@ export default function UploadPage() {
         level: qLevel,
         question_count: qCount,
       }
-      if (qTab === 0) payload.choice_count = optCount
+      if (qTab === 0) {
+        payload.choice_count = optCount
+        payload.choice_format = optionFormat
+      }
       if (qTab === 1) payload.array_choice_count = optCount
       if (qTab === 2) payload.blank_count = blankCount
       const res = await aiQuestionAPI.generateQuestions(payload)
@@ -205,7 +223,7 @@ export default function UploadPage() {
         questionType: aiQuestionPromptKeys_Korean[qTab],
         questionText,
       })
-      setOpenQSnackbar(true)
+      setOpenQDoneSnackbar(true)
     } catch (e) {
       console.error(e)
       alert('문제 저장 중 오류')
@@ -530,31 +548,197 @@ export default function UploadPage() {
                     </Box>
                   </Box>
 
-                  {/* 문장 수 */}
-                  <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
-                    <Box sx={{ position: 'relative' }}>
+                  {/* 요약 유형별 세부 설정 */}
+                  {sumTab === 2 ? (
+                    
+                    // 주제 요약일 때는 주제 수
+                  <>
+                    {/* 문장 수 (주제 요약 옵션으로 추가) */}
+                      <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ 
+                            mb: 1, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5, 
+                            color: '#475569', 
+                            fontWeight: 500 
+                          }}
+                        >
+                          <FormatListNumberedIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+                          문장 수
+                        </Typography>
+                        <FormControl fullWidth>
+                          <Select
+                            value={sumSentCount}
+                            onChange={e => setSumSentCount(Number(e.target.value))}
+                            displayEmpty
+                            sx={{
+                              borderRadius: 2,
+                              backgroundColor: '#ffffff',
+                              border: '2px solid transparent',
+                              '&:hover': {
+                                borderColor: '#f59e0b',
+                                backgroundColor: '#fefefe',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#f59e0b',
+                                boxShadow: '0 0 0 3px rgba(245,158,11,0.1)',
+                              },
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                border: 'none',
+                              },
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                            }}
+                          >
+                            {[3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                              <MenuItem
+                                key={n}
+                                value={n}
+                                sx={{
+                                  '&:hover': { backgroundColor: '#fffbeb' },
+                                  '&.Mui-selected': {
+                                    backgroundColor: '#fef3c7',
+                                    '&:hover': { backgroundColor: '#fde68a' },
+                                  },
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: 20,
+                                      height: 20,
+                                      borderRadius: '50%',
+                                      backgroundColor: '#f59e0b',
+                                      color: 'white',
+                                      fontSize: '12px',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
+                                    {n}
+                                  </Box>
+                                  {n}개
+                                </Box>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
+
+                      {/* 주제 수 (기존 코드 그대로 사용) */}
+                      <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ 
+                            mb: 1, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5, 
+                            color: '#475569', 
+                            fontWeight: 500 
+                          }}
+                        >
+                          <SubjectIcon sx={{ fontSize: 18, color: '#3b82f6' }} />
+                          주제 수
+                        </Typography>
+                        <FormControl fullWidth>
+                          <Select
+                            value={sumTopicCount}
+                            onChange={e => setSumTopicCount(Number(e.target.value))}
+                            displayEmpty
+                            sx={{
+                              borderRadius: 2,
+                              backgroundColor: '#ffffff',
+                              border: '2px solid transparent',
+                              '&:hover': {
+                                borderColor: '#3b82f6',
+                                backgroundColor: '#fefefe',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#3b82f6',
+                                boxShadow: '0 0 0 3px rgba(59,130,246,0.1)',
+                              },
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                border: 'none',
+                              },
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                            }}
+                          >
+                            {[1, 2, 3, 4].map(n => (
+                              <MenuItem
+                                key={n}
+                                value={n}
+                                sx={{
+                                  '&:hover': { backgroundColor: '#eff6ff' },
+                                  '&.Mui-selected': {
+                                    backgroundColor: '#dbeafe',
+                                    '&:hover': { backgroundColor: '#bfdbfe' },
+                                  },
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: 20,
+                                      height: 20,
+                                      borderRadius: '50%',
+                                      backgroundColor: '#3b82f6',
+                                      color: 'white',
+                                      fontSize: '12px',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
+                                    {n}
+                                  </Box>
+                                  {n}개
+                                </Box>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
+                    </>
+                    
+                  ) : sumTab === 4 ? (
+                    // 키워드 요약일 때는 키워드 수
+                    <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
                       <Typography
                         variant="subtitle2"
-                        sx={{ mb: 1, color: '#475569', fontWeight: 500 }}
+                        sx={{ 
+                          mb: 1, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 0.5, 
+                          color: '#475569', 
+                          fontWeight: 500 
+                        }}
                       >
-                        문장 수
+                        <ShortTextIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+                        키워드 수
                       </Typography>
                       <FormControl fullWidth>
                         <Select
-                          value={sumSentCount}
-                          onChange={e => setSumSentCount(Number(e.target.value))}
+                          value={sumKeywordCount}
+                          onChange={e => setSumKeywordCount(Number(e.target.value))}
                           displayEmpty
                           sx={{
                             borderRadius: 2,
                             backgroundColor: '#ffffff',
                             border: '2px solid transparent',
                             '&:hover': {
-                              borderColor: '#f59e0b',
+                              borderColor: '#8b5cf6',
                               backgroundColor: '#fefefe',
                             },
                             '&.Mui-focused': {
-                              borderColor: '#f59e0b',
-                              boxShadow: '0 0 0 3px rgba(245,158,11,0.1)',
+                              borderColor: '#8b5cf6',
+                              boxShadow: '0 0 0 3px rgba(139,92,246,0.1)',
                             },
                             '& .MuiOutlinedInput-notchedOutline': {
                               border: 'none',
@@ -562,15 +746,15 @@ export default function UploadPage() {
                             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                           }}
                         >
-                          {[1, 2, 3, 4, 5].map(n => (
+                          {[0, 1, 2, 3, 4, 5].map(n => (
                             <MenuItem
                               key={n}
                               value={n}
                               sx={{
-                                '&:hover': { backgroundColor: '#fffbeb' },
+                                '&:hover': { backgroundColor: '#f5f3ff' },
                                 '&.Mui-selected': {
-                                  backgroundColor: '#fef3c7',
-                                  '&:hover': { backgroundColor: '#fde68a' },
+                                  backgroundColor: '#ede9fe',
+                                  '&:hover': { backgroundColor: '#ddd6fe' },
                                 },
                               }}
                             >
@@ -583,7 +767,7 @@ export default function UploadPage() {
                                     width: 20,
                                     height: 20,
                                     borderRadius: '50%',
-                                    backgroundColor: '#f59e0b',
+                                    backgroundColor: '#8b5cf6',
                                     color: 'white',
                                     fontSize: '12px',
                                     fontWeight: 'bold',
@@ -591,14 +775,84 @@ export default function UploadPage() {
                                 >
                                   {n}
                                 </Box>
-                                {n}개
+                                {n === 0 ? '자동' : `${n}개`}
                               </Box>
                             </MenuItem>
                           ))}
                         </Select>
                       </FormControl>
                     </Box>
-                  </Box>
+                  ) : (
+                    // 기본/핵심/목차 요약일 때는 문장 수
+                    <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                      <Box sx={{ position: 'relative' }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ mb: 1, color: '#475569', fontWeight: 500 }}
+                        >
+                          문장 수
+                        </Typography>
+                        <FormControl fullWidth>
+                          <Select
+                            value={sumSentCount}
+                            onChange={e => setSumSentCount(Number(e.target.value))}
+                            displayEmpty
+                            sx={{
+                              borderRadius: 2,
+                              backgroundColor: '#ffffff',
+                              border: '2px solid transparent',
+                              '&:hover': {
+                                borderColor: '#f59e0b',
+                                backgroundColor: '#fefefe',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#f59e0b',
+                                boxShadow: '0 0 0 3px rgba(245,158,11,0.1)',
+                              },
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                border: 'none',
+                              },
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                            }}
+                          >
+                            {[3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                              <MenuItem
+                                key={n}
+                                value={n}
+                                sx={{
+                                  '&:hover': { backgroundColor: '#fffbeb' },
+                                  '&.Mui-selected': {
+                                    backgroundColor: '#fef3c7',
+                                    '&:hover': { backgroundColor: '#fde68a' },
+                                  },
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: 20,
+                                      height: 20,
+                                      borderRadius: '50%',
+                                      backgroundColor: '#f59e0b',
+                                      color: 'white',
+                                      fontSize: '12px',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
+                                    {n}
+                                  </Box>
+                                  {n}개
+                                </Box>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
+                    </Box>
+                  )}
                 </Box>
 
                 {/* Optional: Summary Preview Card */}
@@ -611,8 +865,13 @@ export default function UploadPage() {
                     border: '1px dashed rgba(99,102,241,0.2)',
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: '#6366f1', fontWeight: 500 }}>
-                    설정 미리보기: {sumField} 분야의 {sumLevel}학교 수준으로 {sumSentCount}개 문장 요약
+                  <Typography variant="caption" sx={{ color: '#6366f1', fontWeight: 500,fontSize: '1rem' }}>
+                    설정 미리보기: {sumField} 분야의 {sumLevel} 수준으로 
+                    {sumTab === 0 && ` ${sumSentCount}개 문장 기본 요약`}
+                    {sumTab === 1 && ` ${sumSentCount}개 문장 핵심 요약`}
+                    {sumTab === 2 && ` ${sumTopicCount}개 주제 요약`}
+                    {sumTab === 3 && ` ${sumSentCount}개 문장 목차 요약`}
+                    {sumTab === 4 && ` ${sumKeywordCount === 0 ? '자동' : sumKeywordCount + '개'} 키워드 요약`}
                   </Typography>
                 </Box>
               </Box>
@@ -696,16 +955,27 @@ export default function UploadPage() {
                 </Paper>
               )}
 
-              <Snackbar
-                open={openSumSnackbar}
-                autoHideDuration={3000}
-                onClose={() => setOpenSumSnackbar(false)}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            <Snackbar
+              open={openSumDoneSnackbar}
+              onClose={() => {}}
+              anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+              <Alert
+                severity="success"
+                sx={{ borderRadius: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => setOpenSumDoneSnackbar(false)}
+                  >
+                    확인
+                  </Button>
+                }
               >
-                <Alert severity="success" sx={{ borderRadius: 2 }}>
-                   요약이 저장되었습니다!
-                </Alert>
-              </Snackbar>
+                요약 생성이 완료되었습니다!
+              </Alert>
+            </Snackbar>
             </>
           ) : (
             <>
@@ -900,8 +1170,9 @@ export default function UploadPage() {
                           sx={{
                             borderRadius: 2, backgroundColor: '#ffffff', border: '2px solid transparent', '&:hover': { borderColor: '#f59e0b', backgroundColor: '#fefefe' }, '&.Mui-focused': { borderColor: '#f59e0b', boxShadow: '0 0 0 3px rgba(245,158,11,0.1)' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' }, boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                           }}
-                        >
-                          {[2, 3, 4, 5].map(n => (
+                        > 
+                        {/*보기 수 4,5개*/}
+                          {[4,5].map(n => (
                             <MenuItem key={n} value={n} sx={{ '&:hover': { backgroundColor: '#fffbeb' }, '&.Mui-selected': { backgroundColor: '#fef3c7', '&:hover': { backgroundColor: '#fde68a' } } }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: '50%', backgroundColor: '#f59e0b', color: 'white', fontSize: '12px', fontWeight: 'bold' }}>{n}</Box>
@@ -913,7 +1184,138 @@ export default function UploadPage() {
                       </FormControl>
                     </Box>
                   )}
-
+                    {/* 보기 형식 (n지선다) - 새로 추가된 부분 */}
+                  {qTab === 0 && (
+                    <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          mb: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          color: '#475569',
+                          fontWeight: 500,
+                        }}
+                      >
+                        <SubjectIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+                        보기 형식
+                      </Typography>
+                      <FormControl fullWidth>
+                        <Select
+                          value={optionFormat}
+                          onChange={e => setOptionFormat(e.target.value)}
+                          displayEmpty
+                          sx={{
+                            borderRadius: 2,
+                            backgroundColor: '#ffffff',
+                            border: '2px solid transparent',
+                            '&:hover': { borderColor: '#8b5cf6', backgroundColor: '#fefefe' },
+                            '&.Mui-focused': {
+                              borderColor: '#8b5cf6',
+                              boxShadow: '0 0 0 3px rgba(139,92,246,0.1)',
+                            },
+                            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          {['단답형', '문장형'].map(format => (
+                            <MenuItem
+                              key={format}
+                              value={format}
+                              sx={{
+                                '&:hover': { backgroundColor: '#f5f3ff' },
+                                '&.Mui-selected': {
+                                  backgroundColor: '#ede9fe',
+                                  '&:hover': { backgroundColor: '#ddd6fe' },
+                                },
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {format === '단답형' ? (
+                                  <ShortTextIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+                                ) : (
+                                  <SubjectIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+                                )}
+                                {format}
+                              </Box>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                  )}
+                {qTab === 1 && (
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        mb: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        color: '#475569',
+                        fontWeight: 500,
+                      }}
+                    >
+                      <FormatListNumberedIcon sx={{ fontSize: 18, color: '#3b82f6' }} /> 
+                      선택지 수
+                    </Typography>
+                    <FormControl fullWidth>
+                      <Select
+                        value={optCount}
+                        onChange={e => setOptCount(Number(e.target.value))}
+                        displayEmpty
+                        sx={{
+                          borderRadius: 2,
+                          backgroundColor: '#ffffff',
+                          border: '2px solid transparent',
+                          '&:hover': { borderColor: '#3b82f6', backgroundColor: '#fefefe' },
+                          '&.Mui-focused': {
+                            borderColor: '#3b82f6',
+                            boxShadow: '0 0 0 3px rgba(59,130,246,0.1)',
+                          },
+                          '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}
+                      >
+                        {[3, 4, 5, 6].map(n => (
+                          <MenuItem
+                            key={n}
+                            value={n}
+                            sx={{
+                              '&:hover': { backgroundColor: '#eff6ff' },
+                              '&.Mui-selected': {
+                                backgroundColor: '#dbeafe',
+                                '&:hover': { backgroundColor: '#bfdbfe' },
+                              },
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 20,
+                                  height: 20,
+                                  borderRadius: '50%',
+                                  backgroundColor: '#3b82f6',
+                                  color: 'white',
+                                  fontSize: '12px',
+                                  fontWeight: 'bold',
+                                }}
+                              >
+                                {n}
+                              </Box>
+                              {n}개
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                )}
                 {qTab === 2 && (
                   <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
                     <Typography
@@ -948,7 +1350,7 @@ export default function UploadPage() {
                           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                         }}
                       >
-                        {[1, 2, 3].map(n => (
+                        {[1, 2].map(n => (
                           <MenuItem
                             key={n}
                             value={n}
@@ -986,6 +1388,7 @@ export default function UploadPage() {
                   </Box>
                 )}
                 </Box>
+                {/* 설정 미리보기 */}
                 <Box
                   sx={{
                     mt: 3,
@@ -996,9 +1399,10 @@ export default function UploadPage() {
                     mb: 3,
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: '#6366f1', fontWeight: 500 }}>
+                  <Typography variant="caption" sx={{ color: '#6366f1', fontWeight: 500, fontSize: '1rem' }}>
                     설정 미리보기: {qField} 분야의 {qLevel} 수준으로 {qCount}문제
-                    {qTab === 0 && `, 보기 ${optCount}개`}
+                    {qTab === 0 && `, 보기 ${optCount}개, ${optionFormat}`}
+                    {qTab === 1 && `, 선택지 ${optCount}개`}
                     {qTab === 2 && `, 빈칸 ${blankCount}개`}
                   </Typography>
                 </Box>
@@ -1074,11 +1478,27 @@ export default function UploadPage() {
                 </Paper>
               )}
 
-              <Snackbar open={openQSnackbar} autoHideDuration={3000} onClose={() => setOpenQSnackbar(false)}>
-                <Alert severity="success" sx={{ borderRadius: 2 }}>
-                   문제가 저장되었습니다!
-                </Alert>
-              </Snackbar>
+          <Snackbar
+            open={openQDoneSnackbar}
+            onClose={() => {}}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          >
+            <Alert
+              severity="success"
+              sx={{ borderRadius: 2 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() => setOpenQDoneSnackbar(false)}
+                >
+                  확인
+                </Button>
+              }
+            >
+              문제가 저장되었습니다!
+            </Alert>
+          </Snackbar>
             </>
           )}
         </Container>
