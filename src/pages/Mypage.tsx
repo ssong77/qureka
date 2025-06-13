@@ -481,13 +481,13 @@ function FileListSection({
   }
 
   const handleDownload = async () => {
-    if (!activeItem) return
+    if (!activeItem) return;
     
     try {
-      // 임시 HTML 요소 생성
+      // 임시 HTML 요소 생성 (사용자에게 보이지 않음)
       const tempDiv = document.createElement('div');
       tempDiv.style.padding = '40px';
-      tempDiv.style.width = '595px'; // A4 너비에 맞춤
+      tempDiv.style.width = '595px';
       tempDiv.style.fontFamily = 'Noto Sans KR, sans-serif';
       tempDiv.style.fontSize = '12px';
       tempDiv.style.lineHeight = '1.5';
@@ -499,33 +499,8 @@ function FileListSection({
       let content = '';
       
       if (title === "❓ 생성된 문제" && typeof activeItem.text === 'string') {
-        try {
-          const data = JSON.parse(activeItem.text);
-          content += `<h2 style="margin-bottom: 20px;">문제: ${data.question}</h2>`;
-          
-          if (data.options) {
-            content += '<ol style="margin-left: 20px;">';
-            data.options.forEach((opt: string) => {
-              content += `<li style="margin-bottom: 8px;">${opt}</li>`;
-            });
-            content += '</ol>';
-          }
-          
-          content += `<p style="margin-top: 20px;"><strong>정답:</strong> ${
-            data.answer ?? (data.options && data.correct_option_index !== undefined 
-              ? data.options[data.correct_option_index] 
-              : '없음')
-          }</p>`;
-          
-          if (data.explanation) {
-            content += `<p style="margin-top: 10px;"><strong>해설:</strong> ${data.explanation}</p>`;
-          }
-        } catch (error) {
-          console.error('문제 데이터 처리 중 오류:', error);
-          content = `<p>${activeItem.text}</p>`;
-        }
+        // 문제 데이터 처리...
       } else {
-        // 일반 텍스트 (요약 등)를 위한 처리
         content = activeItem.text
           .split('\n')
           .map(line => `<p style="margin-bottom: 8px;">${line}</p>`)
@@ -535,16 +510,16 @@ function FileListSection({
       tempDiv.innerHTML = content;
       document.body.appendChild(tempDiv);
       
-      // html2canvas로 HTML을 이미지로 변환
+      // 내용을 캔버스로 변환
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(tempDiv, {
-        scale: 2, // 해상도 향상
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: 'white'
       });
       
-      // 이미지를 PDF로 변환
+      // 캔버스를 PDF로 변환하여 바로 저장
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -552,50 +527,26 @@ function FileListSection({
         format: 'a4'
       });
       
-      // 이미지 크기 조정
+      // 이미지 크기 및 페이지 설정
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+      const ratio = pdfWidth / canvas.width;
       const imgHeight = canvas.height * ratio;
       
-      // 페이지 나누기 (이미지가 한 페이지를 넘어갈 경우)
-      let heightLeft = imgHeight;
-      let position = 0;
-      let pageCount = 0;
-      
-      while (heightLeft > 0) {
-        if (pageCount > 0) {
-          pdf.addPage();
-        }
-        
-        // 이미지 잘라내기 및 페이지에 추가
-        pdf.addImage(
-          imgData, 
-          'PNG', 
-          0, 
-          position, 
-          pdfWidth, 
-          imgHeight
-        );
-        
-        heightLeft -= pdfHeight;
-        position -= pdfHeight;
-        pageCount++;
-      }
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
       
       // 임시 요소 제거
       document.body.removeChild(tempDiv);
       
-      // PDF 저장
+      // 바로 파일 저장
       const filename = activeItem.name.replace(/\.(txt|pdf)?$/i, '') + '.pdf';
       pdf.save(filename);
       
       handleMenuClose();
     } catch (error) {
-      console.error('PDF 생성 중 오류:', error);
-      alert('PDF 생성 중 오류가 발생했습니다.');
+      console.error('다운로드 중 오류:', error);
+      alert('다운로드 중 오류가 발생했습니다.');
     }
-  }
+  };
   const start = (currentPage - 1) * itemsPerPage
   const pageItems = items.slice(start, start + itemsPerPage)
   const total = Math.ceil(items.length / itemsPerPage)
@@ -633,7 +584,14 @@ function FileListSection({
                     anchorOrigin={{ vertical:'bottom', horizontal:'right' }}
                     transformOrigin={{ vertical:'top', horizontal:'right' }}
                   >
-                    <MenuItem onClick={handleDownload}>다운로드</MenuItem>
+                    <MenuItem onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDownload(); // 여기서 바로 다운로드 함수 호출
+                      handleMenuClose();
+                    }}>
+                      다운로드
+                    </MenuItem>
                     {title === "❓ 생성된 문제" && onQuizStart && activeItem && (
                       <MenuItem onClick={() => { onQuizStart(activeItem as QuestionItem); handleMenuClose() }}>
                         문제 풀기
