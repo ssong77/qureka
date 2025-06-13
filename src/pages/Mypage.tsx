@@ -480,44 +480,121 @@ function FileListSection({
     setActiveItem(null)
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!activeItem) return
     
-    // PDF 인스턴스 생성
-    const doc = new jsPDF({ 
-      unit: 'pt', 
-      format: 'a4',
-      putOnlyUsedFonts: true
-    });
-    console.log('사용 가능한 폰트:', doc.getFontList());
-    // 명시적으로 폰트 설정 (중요!)
-    doc.setFont('NotoSansKR', 'normal');
-    console.log('현재 폰트:', doc.getFont());
-    doc.setFontSize(12);
-    
-    let textToDownload = activeItem.text
-    
-    if (title === "❓ 생성된 문제" && typeof activeItem.text === 'string') {
-      try {
-        const data = JSON.parse(activeItem.text)
-        textToDownload = `문제: ${data.question}\n\n`
-        data.options?.forEach((opt: string, i: number) => {
-          textToDownload += `  ${i+1}. ${opt}\n`
-        })
-        textToDownload += `\n정답: ${data.answer ?? (data.options && data.correct_option_index!==undefined ? data.options[data.correct_option_index] : '없음')}\n`
-        if (data.explanation) textToDownload += `해설: ${data.explanation}\n`
-      } catch(error) {console.error('문제 데이터 처리 중 오류:', error);}
+    try {
+      // 임시 HTML 요소 생성
+      const tempDiv = document.createElement('div');
+      tempDiv.style.padding = '40px';
+      tempDiv.style.width = '595px'; // A4 너비에 맞춤
+      tempDiv.style.fontFamily = 'Noto Sans KR, sans-serif';
+      tempDiv.style.fontSize = '12px';
+      tempDiv.style.lineHeight = '1.5';
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.backgroundColor = 'white';
+      
+      // 내용 준비
+      let content = '';
+      
+      if (title === "❓ 생성된 문제" && typeof activeItem.text === 'string') {
+        try {
+          const data = JSON.parse(activeItem.text);
+          content += `<h2 style="margin-bottom: 20px;">문제: ${data.question}</h2>`;
+          
+          if (data.options) {
+            content += '<ol style="margin-left: 20px;">';
+            data.options.forEach((opt: string) => {
+              content += `<li style="margin-bottom: 8px;">${opt}</li>`;
+            });
+            content += '</ol>';
+          }
+          
+          content += `<p style="margin-top: 20px;"><strong>정답:</strong> ${
+            data.answer ?? (data.options && data.correct_option_index !== undefined 
+              ? data.options[data.correct_option_index] 
+              : '없음')
+          }</p>`;
+          
+          if (data.explanation) {
+            content += `<p style="margin-top: 10px;"><strong>해설:</strong> ${data.explanation}</p>`;
+          }
+        } catch (error) {
+          console.error('문제 데이터 처리 중 오류:', error);
+          content = `<p>${activeItem.text}</p>`;
+        }
+      } else {
+        // 일반 텍스트 (요약 등)를 위한 처리
+        content = activeItem.text
+          .split('\n')
+          .map(line => `<p style="margin-bottom: 8px;">${line}</p>`)
+          .join('');
+      }
+      
+      tempDiv.innerHTML = content;
+      document.body.appendChild(tempDiv);
+      
+      // html2canvas로 HTML을 이미지로 변환
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2, // 해상도 향상
+        useCORS: true,
+        logging: false,
+        backgroundColor: 'white'
+      });
+      
+      // 이미지를 PDF로 변환
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4'
+      });
+      
+      // 이미지 크기 조정
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+      const imgHeight = canvas.height * ratio;
+      
+      // 페이지 나누기 (이미지가 한 페이지를 넘어갈 경우)
+      let heightLeft = imgHeight;
+      let position = 0;
+      let pageCount = 0;
+      
+      while (heightLeft > 0) {
+        if (pageCount > 0) {
+          pdf.addPage();
+        }
+        
+        // 이미지 잘라내기 및 페이지에 추가
+        pdf.addImage(
+          imgData, 
+          'PNG', 
+          0, 
+          position, 
+          pdfWidth, 
+          imgHeight
+        );
+        
+        heightLeft -= pdfHeight;
+        position -= pdfHeight;
+        pageCount++;
+      }
+      
+      // 임시 요소 제거
+      document.body.removeChild(tempDiv);
+      
+      // PDF 저장
+      const filename = activeItem.name.replace(/\.(txt|pdf)?$/i, '') + '.pdf';
+      pdf.save(filename);
+      
+      handleMenuClose();
+    } catch (error) {
+      console.error('PDF 생성 중 오류:', error);
+      alert('PDF 생성 중 오류가 발생했습니다.');
     }
-    
-    // 여기에서 텍스트를 한 줄씩 나누고 위치 조정
-    const splitText = doc.splitTextToSize(textToDownload, 500)
-    
-    // UTF-8 인코딩으로 텍스트 처리
-    doc.text(splitText, 40, 60)
-    
-    const filename = activeItem.name.replace(/\.(txt|pdf)?$/i, '') + '.pdf'
-    doc.save(filename)
-    handleMenuClose()
   }
   const start = (currentPage - 1) * itemsPerPage
   const pageItems = items.slice(start, start + itemsPerPage)
