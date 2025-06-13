@@ -18,6 +18,7 @@ interface FileItem {
   name: string
   date: string
   text: string
+  time: string
 }
 
 interface QuestionItem {
@@ -26,6 +27,7 @@ interface QuestionItem {
   date: string
   text: string
   type: string
+  time: string
   options?: string[]
   answer?: string
   correct_option_index?: number
@@ -94,36 +96,43 @@ export default function Mypage() {
       questionAPI.getUserQuestions(user.id),
     ])
       .then(([sRes, qRes]) => {
-        setSummaryItems(sRes.data.summaries.map(s => ({
-          id: s.selection_id,
-          name: s.file_name,
-          date: new Date(s.created_at).toLocaleDateString('ko-KR'),
-          text: s.summary_text,
-        })))
+        setSummaryItems(sRes.data.summaries.map(s => {
+          const date = new Date(s.created_at);
+          return {
+            id: s.selection_id,
+            name: s.file_name,
+            date: date.toLocaleDateString('ko-KR'),
+            time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+            text: s.summary_text,
+          };
+        }));
         setQuestionItems(qRes.data.questions.map(q => {
+          const date = new Date(q.created_at);
           try {
-            const data = JSON.parse(q.question_text)
+            const data = JSON.parse(q.question_text);
             return {
               id: q.selection_id,
               name: q.file_name,
-              date: new Date(q.created_at).toLocaleDateString('ko-KR'),
+              date: date.toLocaleDateString('ko-KR'),
+              time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
               text: data.question,
               type: data.type,
               options: data.options,
               answer: data.answer,
               correct_option_index: data.correct_option_index,
               explanation: data.explanation,
-            }
+            };
           } catch {
             return {
               id: q.selection_id,
               name: q.file_name,
-              date: new Date(q.created_at).toLocaleDateString('ko-KR'),
+              date: date.toLocaleDateString('ko-KR'),
+              time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
               text: q.question_text,
               type: 'unknown'
-            }
+            };
           }
-        }))
+        }));
       })
       .catch(() => setError('내역을 불러오는 중 오류가 발생했습니다.'))
       .finally(() => setLoading(false))
@@ -523,6 +532,7 @@ function FileListSection({
             <TableRow>
               <TableCell>이름</TableCell>
               <TableCell align="center">날짜</TableCell>
+              <TableCell align="center">시간</TableCell>
               <TableCell align="right" sx={{ width: 48 }} />
             </TableRow>
           </TableHead>
@@ -536,6 +546,7 @@ function FileListSection({
                   </Box>
                 </TableCell>
                 <TableCell align="center">{item.date}</TableCell>
+                <TableCell align="center">{item.time}</TableCell>
                 <TableCell align="right">
                   <IconButton size="small" onClick={e => handleMenuOpen(e, item)}>
                     <MoreVertIcon />
