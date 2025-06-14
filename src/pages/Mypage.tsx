@@ -5,7 +5,8 @@ import {
   Box, Typography, Paper,
   IconButton, Menu, MenuItem, Pagination,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Button, Snackbar
+  CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Button, Snackbar,
+  Chip
 } from '@mui/material'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
@@ -17,17 +18,21 @@ interface FileItem {
   id: number
   name: string
   date: string
-  text: string
   time: string
+  createdAt: string // 날짜와 시간을 합친 정보
+  text: string
+  summaryType?: string // 요약 유형 추가
 }
 
 interface QuestionItem {
   id: number
   name: string
   date: string
+  time: string
+  createdAt: string // 날짜와 시간을 합친 정보
   text: string
   type: string
-  time: string
+  displayType?: string // 표시용 문제 유형
   options?: string[]
   answer?: string
   correct_option_index?: number
@@ -52,6 +57,7 @@ export default function Mypage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogTitle, setDialogTitle] = useState('')
   const [dialogText, setDialogText] = useState('')
+  const [activeViewItem, setActiveViewItem] = useState<FileItem | QuestionItem | null>(null)
   // 확인 대화상자 관련 state 추가
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{id: number, type: 'summary' | 'question'} | null>(null);
@@ -91,6 +97,7 @@ export default function Mypage() {
       setLoading(false)
       return
     }
+    
     Promise.all([
       summaryAPI.getUserSummaries(user.id),
       questionAPI.getUserQuestions(user.id),
@@ -98,16 +105,40 @@ export default function Mypage() {
       .then(([sRes, qRes]) => {
         setSummaryItems(sRes.data.summaries.map(s => {
           const date = new Date(s.created_at);
+          // 유형 정보 매핑
+          const summaryTypeMap: {[key: string]: string} = {
+            'basic': '기본 요약',
+            'concise': '핵심 요약',
+            'topic': '주제 요약',
+            'toc': '목차 요약',
+            'keyword': '키워드 요약'
+          };
+          
           return {
             id: s.selection_id,
             name: s.file_name,
             date: date.toLocaleDateString('ko-KR'),
             time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+            createdAt: date.toLocaleString('ko-KR', { 
+              year: 'numeric', month: 'long', day: 'numeric', 
+              hour: '2-digit', minute: '2-digit' 
+            }),
             text: s.summary_text,
+            summaryType: summaryTypeMap[s.summary_type] || '기본 요약'
           };
         }));
+        
         setQuestionItems(qRes.data.questions.map(q => {
           const date = new Date(q.created_at);
+          
+          // 문제 유형 매핑
+          const questionTypeMap: {[key: string]: string} = {
+            'multiple-choice': '객관식',
+            'short-answer': '주관식',
+            'fill-in-the-blank': '빈칸 채우기',
+            'ox-quiz': 'O/X 퀴즈'
+          };
+          
           try {
             const data = JSON.parse(q.question_text);
             return {
@@ -115,8 +146,13 @@ export default function Mypage() {
               name: q.file_name,
               date: date.toLocaleDateString('ko-KR'),
               time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+              createdAt: date.toLocaleString('ko-KR', { 
+                year: 'numeric', month: 'long', day: 'numeric', 
+                hour: '2-digit', minute: '2-digit' 
+              }),
               text: data.question,
               type: data.type,
+              displayType: questionTypeMap[data.type] || '기타',
               options: data.options,
               answer: data.answer,
               correct_option_index: data.correct_option_index,
@@ -128,8 +164,13 @@ export default function Mypage() {
               name: q.file_name,
               date: date.toLocaleDateString('ko-KR'),
               time: date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+              createdAt: date.toLocaleString('ko-KR', { 
+                year: 'numeric', month: 'long', day: 'numeric', 
+                hour: '2-digit', minute: '2-digit' 
+              }),
               text: q.question_text,
-              type: 'unknown'
+              type: 'unknown',
+              displayType: '기타'
             };
           }
         }));
@@ -143,32 +184,20 @@ export default function Mypage() {
     localStorage.setItem('incorrectNotes', JSON.stringify(incorrectAnswers))
   }, [incorrectAnswers])
 
-  // 요약 삭제
-  const handleDeleteSummary = async (id: number) => {
-    try {
-      await summaryAPI.deleteSummary(id)
-      setSummaryItems(prev => prev.filter(item => item.id !== id))
-      setSnackbar({ open: true, message: '요약이 삭제되었습니다.', severity: 'success' })
-    } catch {
-      setSnackbar({ open: true, message: '요약 삭제에 실패했습니다.', severity: 'error' })
-    }
-  }
+  // 다이얼로그 열기 함수
+  const handleOpenDialog = (item: FileItem | QuestionItem) => {
+    setDialogTitle(item.name);
+    setDialogText(item.text);
+    setActiveViewItem(item);
+    setDialogOpen(true);
+  };
 
-  // 문제 삭제
-  const handleDeleteQuestion = async (id: number) => {
-    try {
-      await questionAPI.deleteQuestion(id)
-      setQuestionItems(prev => prev.filter(item => item.id !== id))
-      setSnackbar({ open: true, message: '문제가 삭제되었습니다.', severity: 'success' })
-    } catch {
-      setSnackbar({ open: true, message: '문제 삭제에 실패했습니다.', severity: 'error' })
-    }
-  }
   // 삭제 확인 다이얼로그 표시 함수
   const handleDeleteConfirm = (id: number, type: 'summary' | 'question') => {
     setItemToDelete({ id, type });
     setDeleteConfirmOpen(true);
   };
+  
   // 실제 삭제 수행 함수
   const handleDeleteConfirmed = async () => {
     if (!itemToDelete) return;
@@ -194,6 +223,7 @@ export default function Mypage() {
       setItemToDelete(null);
     }
   };
+
   // 퀴즈 채점
   const handleQuizSubmit = () => {
     setQuizSubmitted(true)
@@ -265,11 +295,7 @@ export default function Mypage() {
           items={summaryItems}
           currentPage={summaryPage}
           onPageChange={(_, p) => setSummaryPage(p)}
-          onView={item => {
-            setDialogTitle(item.name)
-            setDialogText(item.text)
-            setDialogOpen(true)
-          }}
+          onView={handleOpenDialog}
           onDelete={item => handleDeleteConfirm(item.id, 'summary')}
         />
 
@@ -278,11 +304,7 @@ export default function Mypage() {
           items={questionItems}
           currentPage={questionPage}
           onPageChange={(_, p) => setQuestionPage(p)}
-          onView={item => {
-            setDialogTitle(item.name)
-            setDialogText(item.text)
-            setDialogOpen(true)
-          }}
+          onView={handleOpenDialog}
           onQuizStart={item => {
             const related = questionItems.filter(q => q.name === item.name)
             setCurrentQuizQuestions(related)
@@ -296,7 +318,27 @@ export default function Mypage() {
 
       {/* 상세 보기 다이얼로그 */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{dialogTitle}</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">{dialogTitle}</Typography>
+            {/* 유형 정보 추가 */}
+            {activeViewItem && (
+              <Chip 
+                label={
+                  activeViewItem.hasOwnProperty('summaryType') 
+                    ? (activeViewItem as FileItem).summaryType 
+                    : (activeViewItem as QuestionItem).displayType || '기타'
+                }
+                size="small"
+                color={activeViewItem.hasOwnProperty('summaryType') ? "primary" : "secondary"}
+                variant="outlined"
+              />
+            )}
+          </Box>
+          <Typography variant="caption" color="text.secondary" display="block">
+            {activeViewItem?.createdAt}
+          </Typography>
+        </DialogTitle>
         <DialogContent dividers>
           <Typography sx={{ whiteSpace:'pre-wrap' }}>{dialogText}</Typography>
         </DialogContent>
@@ -414,7 +456,10 @@ export default function Mypage() {
                   )}
                   <Button
                     variant="outlined" color="error" size="small" sx={{ mt:2 }}
-                    onClick={() => handleDeleteIncorrectNote(q.id, q.name)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteIncorrectNote(q.id, q.name);
+                    }}
                   >
                     오답 노트에서 삭제
                   </Button>
@@ -426,7 +471,8 @@ export default function Mypage() {
           <Button onClick={() => setIncorrectNoteOpen(false)}>닫기</Button>
         </DialogActions>
       </Dialog>
-            {/* 삭제 확인 다이얼로그 - 여기에 추가 */}
+      
+      {/* 삭제 확인 다이얼로그 */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
@@ -475,6 +521,7 @@ function FileListSection({
     setAnchorEl(e.currentTarget)
     setActiveItem(item)
   }
+  
   const handleMenuClose = () => {
     setAnchorEl(null);
     setActiveItem(null);
@@ -484,62 +531,40 @@ function FileListSection({
     if (!activeItem) return;
     
     try {
-      // 임시 HTML 요소 생성 (사용자에게 보이지 않음)
-      const tempDiv = document.createElement('div');
-      tempDiv.style.padding = '40px';
-      tempDiv.style.width = '595px';
-      tempDiv.style.fontFamily = 'Noto Sans KR, sans-serif';
-      tempDiv.style.fontSize = '12px';
-      tempDiv.style.lineHeight = '1.5';
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.backgroundColor = 'white';
-      
       // 내용 준비
-      let content = '';
+      let textToDownload = activeItem.text;
       
+      // 문제 데이터인 경우 포맷팅
       if (title === "❓ 생성된 문제" && typeof activeItem.text === 'string') {
-        // 문제 데이터 처리...
-      } else {
-        content = activeItem.text
-          .split('\n')
-          .map(line => `<p style="margin-bottom: 8px;">${line}</p>`)
-          .join('');
+        try {
+          const data = JSON.parse(activeItem.text);
+          textToDownload = `문제: ${data.question}\n\n`;
+          data.options?.forEach((opt: string, i: number) => {
+            textToDownload += `  ${i+1}. ${opt}\n`;
+          });
+          textToDownload += `\n정답: ${data.answer ?? (data.options && data.correct_option_index!==undefined ? data.options[data.correct_option_index] : '없음')}\n`;
+          if (data.explanation) textToDownload += `해설: ${data.explanation}\n`;
+        } catch (error) {
+          console.error('문제 데이터 처리 중 오류:', error);
+        }
       }
       
-      tempDiv.innerHTML = content;
-      document.body.appendChild(tempDiv);
+      // Blob 생성 및 다운로드
+      const blob = new Blob([textToDownload], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
       
-      // 내용을 캔버스로 변환
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: 'white'
-      });
+      // 다운로드 링크 생성 및 자동 클릭
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${activeItem.name.replace(/\.(txt|pdf)?$/i, '')}.txt`;
+      document.body.appendChild(link);
+      link.click();
       
-      // 캔버스를 PDF로 변환하여 바로 저장
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'pt',
-        format: 'a4'
-      });
-      
-      // 이미지 크기 및 페이지 설정
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const ratio = pdfWidth / canvas.width;
-      const imgHeight = canvas.height * ratio;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
-      
-      // 임시 요소 제거
-      document.body.removeChild(tempDiv);
-      
-      // 바로 파일 저장
-      const filename = activeItem.name.replace(/\.(txt|pdf)?$/i, '') + '.pdf';
-      pdf.save(filename);
+      // 정리
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
       
       handleMenuClose();
     } catch (error) {
@@ -547,6 +572,7 @@ function FileListSection({
       alert('다운로드 중 오류가 발생했습니다.');
     }
   };
+
   const start = (currentPage - 1) * itemsPerPage
   const pageItems = items.slice(start, start + itemsPerPage)
   const total = Math.ceil(items.length / itemsPerPage)
@@ -555,12 +581,12 @@ function FileListSection({
     <Box mb={6}>
       <Typography variant="h6" fontWeight="bold" gutterBottom>{title}</Typography>
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="medium">
           <TableHead>
             <TableRow>
               <TableCell>이름</TableCell>
-              <TableCell align="center">날짜</TableCell>
-              <TableCell align="center">시간</TableCell>
+              <TableCell align="center">생성 날짜</TableCell>
+              <TableCell align="center">유형</TableCell>
               <TableCell align="right" sx={{ width: 48 }} />
             </TableRow>
           </TableHead>
@@ -573,63 +599,109 @@ function FileListSection({
                     <Typography noWrap>{item.name}</Typography>
                   </Box>
                 </TableCell>
-                <TableCell align="center">{item.date}</TableCell>
-                <TableCell align="center">{item.time}</TableCell>
+                <TableCell align="center">{item.createdAt}</TableCell>
+                <TableCell align="center">
+                  {/* 유형 정보 표시 - 요약인지 문제인지에 따라 다른 정보 표시 */}
+                  {title.includes('요약') ? (
+                    <Chip 
+                      label={(item as FileItem).summaryType || '기본 요약'} 
+                      size="small" 
+                      color="primary" 
+                      variant="outlined" 
+                    />
+                  ) : (
+                    <Chip 
+                      label={(item as QuestionItem).displayType || '기타'} 
+                      size="small" 
+                      color="secondary" 
+                      variant="outlined" 
+                    />
+                  )}
+                </TableCell>
                 <TableCell align="right">
                   <IconButton 
                     size="small" 
-                    onClick={e => {
-                      e.stopPropagation(); // 이벤트 버블링 중지
+                    onClick={(e) => {
+                      e.stopPropagation();
                       handleMenuOpen(e, item);
                     }}
                   >
                     <MoreVertIcon />
                   </IconButton>
-                    <Menu
-                      anchorEl={anchorEl}
-                      open={openMenu}
-                      onClose={(event, reason) => {
-                        handleMenuClose();
-                      }}
-                      disableAutoFocusItem
-                      onClick={(e) => e.stopPropagation()}
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    >
-                    <MenuItem onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDownload(); // 여기서 바로 다운로드 함수 호출
-                      handleMenuClose();
-                    }}>
-                      다운로드
-                    </MenuItem>
-                    {title === "❓ 생성된 문제" && onQuizStart && activeItem && (
-                      <MenuItem onClick={() => { onQuizStart(activeItem as QuestionItem); handleMenuClose() }}>
-                        문제 풀기
-                      </MenuItem>
-                    )}
-                  {onDelete && activeItem && (
-                    <MenuItem onClick={(e) => { 
-                      e.preventDefault(); // 브라우저 기본 동작 방지
-                      e.stopPropagation(); // 이벤트 버블링 방지
-                      onDelete(activeItem); 
-                      handleMenuClose(); 
-                    }}>
-                      삭제
-                    </MenuItem>
-                  )}
-                  </Menu>
                 </TableCell>
               </TableRow>
             ))}
+            {pageItems.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                  <Typography color="text.secondary">저장된 항목이 없습니다.</Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
-      <Box sx={{ display:'flex', justifyContent:'center', mt:2 }}>
-        <Pagination count={total} page={currentPage} onChange={onPageChange} shape="rounded" color="primary" />
-      </Box>
+      
+      {total > 0 && (
+        <Box display="flex" justifyContent="center" mt={2}>
+          <Pagination 
+            count={total} 
+            page={currentPage}
+            onChange={onPageChange}
+            color="primary"
+            showFirstButton
+            showLastButton
+          />
+        </Box>
+      )}
+      
+      <Menu
+        anchorEl={anchorEl}
+        open={openMenu}
+        onClose={(event, reason) => {
+          handleMenuClose();
+        }}
+        disableAutoFocusItem
+        onClick={(e) => e.stopPropagation()}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={(e) => {
+          e.stopPropagation();
+          onView(activeItem!);
+          handleMenuClose();
+        }}>
+          보기
+        </MenuItem>
+        
+        {/* 문제인 경우 '문제 풀기' 옵션 추가 */}
+        {onQuizStart && activeItem && 'type' in activeItem && (
+          <MenuItem onClick={(e) => {
+            e.stopPropagation();
+            onQuizStart(activeItem as QuestionItem);
+            handleMenuClose();
+          }}>
+            문제 풀기
+          </MenuItem>
+        )}
+        
+        <MenuItem onClick={(e) => {
+          e.stopPropagation();
+          handleDownload();
+        }}>
+          다운로드
+        </MenuItem>
+        
+        {onDelete && activeItem && (
+          <MenuItem onClick={(e) => {
+            e.stopPropagation();
+            onDelete(activeItem);
+            handleMenuClose();
+          }}>
+            삭제
+          </MenuItem>
+        )}
+      </Menu>
     </Box>
-    
   )
 }
