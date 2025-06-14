@@ -476,9 +476,9 @@ function FileListSection({
     setActiveItem(item)
   }
   const handleMenuClose = () => {
-    setAnchorEl(null)
-    setActiveItem(null)
-  }
+    setAnchorEl(null);
+    setActiveItem(null);
+  };
 
   const handleDownload = async () => {
     if (!activeItem) return;
@@ -576,14 +576,26 @@ function FileListSection({
                 <TableCell align="center">{item.date}</TableCell>
                 <TableCell align="center">{item.time}</TableCell>
                 <TableCell align="right">
-                  <IconButton size="small" onClick={e => handleMenuOpen(e, item)}>
+                  <IconButton 
+                    size="small" 
+                    onClick={e => {
+                      e.stopPropagation(); // 이벤트 버블링 중지
+                      handleMenuOpen(e, item);
+                    }}
+                  >
                     <MoreVertIcon />
                   </IconButton>
-                  <Menu
-                    anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose}
-                    anchorOrigin={{ vertical:'bottom', horizontal:'right' }}
-                    transformOrigin={{ vertical:'top', horizontal:'right' }}
-                  >
+                    <Menu
+                      anchorEl={anchorEl}
+                      open={openMenu}
+                      onClose={(event, reason) => {
+                        handleMenuClose();
+                      }}
+                      disableAutoFocusItem
+                      onClick={(e) => e.stopPropagation()}
+                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    >
                     <MenuItem onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
