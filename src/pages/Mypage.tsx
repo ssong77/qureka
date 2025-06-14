@@ -531,40 +531,89 @@ function FileListSection({
     if (!activeItem) return;
     
     try {
-      // 내용 준비
-      let textToDownload = activeItem.text;
+      // 임시 HTML 요소 생성
+      const tempDiv = document.createElement('div');
+      tempDiv.style.padding = '40px';
+      tempDiv.style.width = '595px'; // A4 너비
+      tempDiv.style.fontFamily = 'Arial, sans-serif';
+      tempDiv.style.fontSize = '12px';
+      tempDiv.style.lineHeight = '1.5';
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.backgroundColor = 'white';
       
-      // 문제 데이터인 경우 포맷팅
-      if (title === "❓ 생성된 문제" && typeof activeItem.text === 'string') {
+      // 내용 준비
+      let content = '';
+      let fileName = activeItem.name;
+      
+      if (title === "❓ 생성된 문제" && 'type' in activeItem) {
         try {
-          const data = JSON.parse(activeItem.text);
-          textToDownload = `문제: ${data.question}\n\n`;
-          data.options?.forEach((opt: string, i: number) => {
-            textToDownload += `  ${i+1}. ${opt}\n`;
-          });
-          textToDownload += `\n정답: ${data.answer ?? (data.options && data.correct_option_index!==undefined ? data.options[data.correct_option_index] : '없음')}\n`;
-          if (data.explanation) textToDownload += `해설: ${data.explanation}\n`;
+          const questionItem = activeItem as QuestionItem;
+          content += `<h2 style="margin-bottom: 20px;">문제: ${questionItem.text}</h2>`;
+          
+          if (questionItem.options && questionItem.options.length > 0) {
+            content += '<ol style="margin-left: 20px;">';
+            questionItem.options.forEach((opt) => {
+              content += `<li style="margin-bottom: 8px;">${opt}</li>`;
+            });
+            content += '</ol>';
+          }
+          
+          const answer = questionItem.answer ?? 
+            (questionItem.options && 
+             questionItem.correct_option_index !== undefined ? 
+               questionItem.options[questionItem.correct_option_index] : 
+               '없음');
+               
+          content += `<p style="margin-top: 20px;"><strong>정답:</strong> ${answer}</p>`;
+          
+          if (questionItem.explanation) {
+            content += `<p style="margin-top: 10px;"><strong>해설:</strong> ${questionItem.explanation}</p>`;
+          }
         } catch (error) {
           console.error('문제 데이터 처리 중 오류:', error);
+          content = `<p>${activeItem.text}</p>`;
         }
+      } else {
+        // 일반 텍스트 (요약 등)를 위한 처리
+        content = activeItem.text
+          .split('\n')
+          .map(line => `<p style="margin-bottom: 8px;">${line}</p>`)
+          .join('');
       }
       
-      // Blob 생성 및 다운로드
-      const blob = new Blob([textToDownload], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
+      tempDiv.innerHTML = content;
+      document.body.appendChild(tempDiv);
       
-      // 다운로드 링크 생성 및 자동 클릭
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${activeItem.name.replace(/\.(txt|pdf)?$/i, '')}.txt`;
-      document.body.appendChild(link);
-      link.click();
+      // html2canvas로 HTML을 이미지로 변환 (동적 import)
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2, // 해상도 향상
+        useCORS: true,
+        logging: false,
+        backgroundColor: 'white'
+      });
       
-      // 정리
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
+      // 이미지를 PDF로 변환
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const ratio = pdfWidth / canvas.width;
+      const imgHeight = canvas.height * ratio;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+      
+      // 임시 요소 제거
+      document.body.removeChild(tempDiv);
+      
+      // PDF 저장
+      const filename = `${fileName.replace(/\.(txt|pdf)?$/i, '')}.pdf`;
+      pdf.save(filename);
       
       handleMenuClose();
     } catch (error) {
@@ -668,7 +717,9 @@ function FileListSection({
       >
         <MenuItem onClick={(e) => {
           e.stopPropagation();
-          onView(activeItem!);
+          if (activeItem) {
+            onView(activeItem);
+          }
           handleMenuClose();
         }}>
           보기
