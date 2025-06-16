@@ -73,19 +73,24 @@ export default function Header() {
 
           {isLoggedIn ? (
             <>
-            <Chip
-              label={user?.name || '사용자'}
-              onClick={handleMenuOpen}
-              avatar={<Avatar sx={{ bgcolor: 'primary.main' }}>{user?.name?.charAt(0) || 'U'}</Avatar>}
-              variant="outlined"
-              clickable
-              sx={{ 
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: 'action.hover'
-                }
-              }}
-            />
+  <Chip
+    label={user?.name || '사용자'}
+    onClick={handleMenuOpen}
+    avatar={<Avatar sx={{ bgcolor: 'primary.main',color: 'red' }}>{user?.name?.charAt(0) || 'U'}</Avatar>}
+    variant="outlined"
+    clickable
+    sx={{ 
+      cursor: 'pointer',
+      fontSize: '1.1rem',
+      color: 'black', // 글씨 색상을 흰색으로 변경
+      borderColor: 'white', // 테두리 색상을 흰색으로 변경
+      '&:hover': {
+        backgroundColor: 'action.hover',
+        borderColor: 'white', // 호버 시에도 테두리 색상 유지
+        color: 'black' // 호버 시에도 글씨 색상 유지
+      }
+    }}
+  />
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
