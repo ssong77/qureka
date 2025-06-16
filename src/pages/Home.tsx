@@ -12,10 +12,11 @@ import { styled } from '@mui/material/styles';
 import examImage from '../assets/images/exam.png';
 import questionTypesImage from '../assets/images/pdf.png';
 import howToUseImage from '../assets/images/process.png';
-
+import projectMatterImage from '../assets/images/project_matter.png'; 
+import projectMatter2Image from '../assets/images/project_matter2.png';
 // 스타일드 컴포넌트
 const HeroSection = styled(Box)(({ theme }) => ({
-  minHeight: '100vh',
+  minHeight: '20vh',
   background: '#ffffff',
   display: 'flex',
   flexDirection: 'column',
@@ -130,65 +131,209 @@ function Home() {
 
   return (
     <>
-      {/* Hero Section */}
+      {/* 수정된 Hero Section - 텍스트 왼쪽, 이미지 오른쪽 */}
       <HeroSection>
         <Header />
         <Container
-          maxWidth="md"
+          maxWidth="lg"
           sx={{
-            textAlign: 'center',
             flex: 1,
             display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
             position: 'relative',
             zIndex: 1,
+            pt: 1, // 상단 여백 추가
           }}
         >
           <Fade in timeout={1000}>
-            <Box>
-              <Typography
-                variant="h2"
-                fontWeight="800"
-                gutterBottom
-                sx={{
-                  color: '#1F2937',
-                  mb: 3,
-                  background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                여러분들의 문서 도우미!
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{
-                  color: '#6B7280',
-                  mb: 5,
-                  lineHeight: 1.6,
-                  fontWeight: '400',
-                }}
-              >
-                다양한 문서들을 쉽게 작성할 수 있도록 도와드립니다
-              </Typography>
-              <PrimaryButton
-                size="large"
-                onClick={() => {
-                  if (isLoggedIn) {
-                    navigate('/upload');
-                  } else {
-                    navigate('/login');
-                  }
-                }}
-              >
-                시작하기! 🚀
-              </PrimaryButton>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%'
+            }}>
+              {/* 왼쪽 텍스트 영역 */}
+              <Box sx={{ 
+                flex: 1, 
+                textAlign: { xs: 'center', md: 'left' },
+                mb: { xs: 6, md: 0 },
+                pr: { md: 6 },
+                pl: { xs: 3, md: 6 }
+              }}>
+                <Typography
+                  variant="h2"
+                  fontWeight="800"
+                  gutterBottom
+                  sx={{
+                    color: '#1F2937',
+                    mb: 3,
+                    background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  여러분들의 문서 도우미!
+                </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: '#6B7280',
+                    mb: 5,
+                    lineHeight: 1.6,
+                    fontWeight: '400',
+                  }}
+                >
+                  다양한 문서들을 쉽게 작성할 수 있도록 도와드립니다
+                </Typography>
+                <PrimaryButton
+                  size="large"
+                  onClick={() => {
+                    if (isLoggedIn) {
+                      navigate('/upload');
+                    } else {
+                      navigate('/login');
+                    }
+                  }}
+                >
+                  시작하기! 🚀
+                </PrimaryButton>
+              </Box>
+              
+              {/* 오른쪽 이미지 영역 */}
+              <Box sx={{ 
+                flex: 1,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                <FeatureImage 
+                  src={examImage} 
+                  alt="문서 도우미" 
+                  sx={{ 
+                    maxWidth: { xs: '80%', md: '90%' }, 
+                    transform: 'translateY(-20px)' 
+                  }}
+                />
+              </Box>
             </Box>
           </Fade>
         </Container>
       </HeroSection>
+      {/* 문제 정의 섹션 */}
+      <Box sx={{ py: 12, bgcolor: '#F8FAFC' }}>
+        <Container maxWidth="lg">
+          <Typography
+            variant="h3"
+            fontWeight="700"
+            align="center"
+            sx={{
+              color: '#1F2937',
+              mb: 6,
+              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            문제 정의
+          </Typography>
+          
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: 6,
+              mb: 6
+            }}
+          >
+            {/* 첫 번째 문제 정의 항목 */}
+            <Fade in timeout={1000}>
+              <StyledCard sx={{ flex: 1 }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Box 
+                      component="img"
+                      src={projectMatterImage}
+                      alt="학습 효율 저하"
+                      sx={{ 
+                        width: '100%', 
+                        maxWidth: 280,
+                        height: 'auto',
+                        mb: 3,
+                        borderRadius: 2,
+                        filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1))'
+                      }}
+                    />
+                    <Typography
+                      variant="h4"
+                      fontWeight="700"
+                      align="center"
+                      sx={{ mb: 2 }}
+                    >
+                      학습 효율 저하
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      align="center"
+                      sx={{ 
+                        lineHeight: 1.7,
+                        color: '#4B5563'
+                      }}
+                    >
+                      교육을 위해 제공되는 방대한 양의 자료들은<br />
+                      요약이나 학습 점검을 위해 오랜 시간이 필요함
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </StyledCard>
+            </Fade>
+
+            {/* 두 번째 문제 정의 항목 */}
+            <Fade in timeout={1500}>
+              <StyledCard sx={{ flex: 1 }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Box 
+                      component="img"
+                      src={projectMatter2Image}
+                      alt="기존 AI 프로그램의 한계"
+                      sx={{ 
+                        width: '100%', 
+                        maxWidth: 280,
+                        height: 'auto',
+                        mb: 3,
+                        borderRadius: 2,
+                        filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1))'
+                      }}
+                    />
+                    <Typography
+                      variant="h4"
+                      fontWeight="700"
+                      align="center"
+                      sx={{ mb: 2 }}
+                    >
+                      기존 AI 프로그램의 한계
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      align="center"
+                      sx={{ 
+                        lineHeight: 1.7,
+                        color: '#4B5563'
+                      }}
+                    >
+                      사용자가 일일이 프롬프트를 작성해야 하며,<br /> 
+                      기존 프로그램들은 세부적인 설정이 불가능
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </StyledCard>
+            </Fade>
+          </Box>
+        </Container>
+      </Box>
+
 
       {/* Features Section */}
       <Box sx={{ py: 12, bgcolor: '#ffffff' }}>
