@@ -43,7 +43,14 @@ export default function Login() {
       }
     } catch (err: any) {
       console.error(err)
-      setError(err.response?.data?.message || '서버 오류로 로그인할 수 없습니다.')
+      // 백엔드에서 오는 메시지를 우선적으로 표시
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message && err.message.includes('이미 사용 중인 아이디 입니당')) {
+        setError(err.message); // 직접 오류 메시지에 포함된 경우
+      } else {
+        setError('서버 오류로 로그인할 수 없습니다.');
+      }
     }
   }
 

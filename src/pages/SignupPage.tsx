@@ -50,11 +50,23 @@ export default function SignupPage() {
   }
 
   const handleIdCheck = async () => {
+    // 입력 값 검증
+    if (!form.userId.trim()) {
+      alert('아이디를 입력해주세요.');
+      return;
+    }
+
     try {
       const { data } = await userAPI.checkUserid(form.userId)
-      alert(data.message)
-    } catch {
-      alert('중복 확인 중 오류가 발생했습니다.')
+      alert(data.message) // 성공 메시지 표시 (예: "사용 가능한 아이디입니다.")
+    } catch (err: any) {
+      // 백엔드에서 오는 실제 오류 메시지 표시
+      if (err.response?.data?.message) {
+        alert(err.response.data.message); // "이미 사용 중인 아이디입니다." 같은 메시지 표시
+      } else {
+        alert('중복 확인 중 오류가 발생했습니다.');
+      }
+      console.error('ID 중복 확인 오류:', err);
     }
   }
 

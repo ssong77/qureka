@@ -76,7 +76,20 @@ export default function Header() {
   <Chip
     label={user?.name || '사용자'}
     onClick={handleMenuOpen}
-    avatar={<Avatar sx={{ bgcolor: 'primary.main',color: 'red' }}>{user?.name?.charAt(0) || 'U'}</Avatar>}
+avatar={
+                  <Avatar 
+                    sx={{ 
+                      bgcolor: 'primary.main',
+                      '& .MuiAvatar-root': { color: '#ffffff !important' },
+                      '& .MuiSvgIcon-root': { color: '#ffffff !important' },
+                      '& *': { color: '#ffffff !important' }
+                    }}
+                  >
+                    <Typography sx={{ color: '#ffffff !important' }}>
+                      {user?.name?.charAt(0) || 'U'}
+                    </Typography>
+                  </Avatar>
+  }
     variant="outlined"
     clickable
     sx={{ 

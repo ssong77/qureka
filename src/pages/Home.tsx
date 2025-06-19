@@ -14,6 +14,8 @@ import questionTypesImage from '../assets/images/pdf.png';
 import howToUseImage from '../assets/images/process.png';
 import projectMatterImage from '../assets/images/project_matter.png'; 
 import projectMatter2Image from '../assets/images/project_matter2.png';
+import aiImage from '../assets/images/ai.png';  
+import heyImage from '../assets/images/hey.png'; 
 // 스타일드 컴포넌트
 const HeroSection = styled(Box)(({ theme }) => ({
   minHeight: '20vh',
@@ -167,13 +169,14 @@ function Home() {
                   sx={{
                     color: '#1F2937',
                     mb: 3,
+                    fontSize: { xs: '2.0rem', md: '3.0rem' },
                     background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  여러분들의 문서 도우미!
+                  Qureka와 함께라면 공부 걱정은 끝!
                 </Typography>
                 <Typography
                   variant="h5"
@@ -184,7 +187,7 @@ function Home() {
                     fontWeight: '400',
                   }}
                 >
-                  다양한 문서들을 쉽게 작성할 수 있도록 도와드립니다
+                  강의자료를 업로드하면 AI가 요약과 맞춤형 문제를 제공합니다.<br/> 더 효율적인 공부, 지금 경험해보세요!
                 </Typography>
                 <PrimaryButton
                   size="large"
@@ -208,7 +211,7 @@ function Home() {
                 alignItems: 'center'
               }}>
                 <FeatureImage 
-                  src={examImage} 
+                  src={aiImage} 
                   alt="문서 도우미" 
                   sx={{ 
                     maxWidth: { xs: '80%', md: '90%' }, 
@@ -230,13 +233,14 @@ function Home() {
             sx={{
               color: '#1F2937',
               mb: 6,
+              fontSize: { xs: '2rem', md: '2.8rem' },
               background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}
           >
-            문제 정의
+            Qureka의 장점
           </Typography>
           
           <Box 
@@ -271,7 +275,7 @@ function Home() {
                       align="center"
                       sx={{ mb: 2 }}
                     >
-                      학습 효율 저하
+                      다양한 유형 지원
                     </Typography>
                     <Typography
                       variant="body1"
@@ -281,8 +285,8 @@ function Home() {
                         color: '#4B5563'
                       }}
                     >
-                      교육을 위해 제공되는 방대한 양의 자료들은<br />
-                      요약이나 학습 점검을 위해 오랜 시간이 필요함
+                      요약의 유형이나 문제의 유형을 다양하게 지원하여<br />
+                      맞춤형 콘텐츠 생성을 통한 학습 효율성 강화
                     </Typography>
                   </Box>
                 </CardContent>
@@ -313,7 +317,7 @@ function Home() {
                       align="center"
                       sx={{ mb: 2 }}
                     >
-                      기존 AI 프로그램의 한계
+                      초보자도 쉽게 사용 가능
                     </Typography>
                     <Typography
                       variant="body1"
@@ -323,8 +327,8 @@ function Home() {
                         color: '#4B5563'
                       }}
                     >
-                      사용자가 일일이 프롬프트를 작성해야 하며,<br /> 
-                      기존 프로그램들은 세부적인 설정이 불가능
+                      분야, 난이도 등을 사용자가 직접 선택하여<br /> 
+                      쉽고 편하게 다양한 자료 생성 가능
                     </Typography>
                   </Box>
                 </CardContent>
@@ -364,7 +368,7 @@ function Home() {
                         WebkitTextFillColor: 'transparent',
                       }}
                     >
-                      시험 및 퀴즈를 준비해 보세요
+                       AI로 더 똑똑하고 빠르게 요약 및 문제 생성
                     </Typography>
                     <Typography
                       variant="h6"
@@ -375,9 +379,9 @@ function Home() {
                         fontWeight: '400',
                       }}
                     >
-                      PDF만 업로드하면 나머지 작업은 AI 문제 생성기가 처리해 드립니다. <br />
-                      클릭 몇 번이면 원하는 대로 맞춤형 시험이나 퀴즈를 생성할 수 있습니다. <br />
-                      더 빠르고 강력하며 스마트한 도구를 만나보세요.
+                      복잡한 문서도 핵심만 뽑아 요약하고, 중요한 내용만 골라 문제로 만들어줍니다. <br />
+                      클릭 몇 번으로 요약본이랑 문제를 생성할 수 있습니다. <br />
+                      공부는 간단하게, 시험 대비는 똑똑하게 준비해 보세요.
                     </Typography>
                   </Box>
 
@@ -390,7 +394,7 @@ function Home() {
                       justifyContent: 'center',
                     }}
                   >
-                    <FeatureImage src={examImage} alt="문서 요약" />
+                    <FeatureImage src={heyImage} alt="문서 요약" />
                   </Box>
                 </Box>
               </CardContent>
@@ -437,7 +441,7 @@ function Home() {
                         WebkitTextFillColor: 'transparent',
                       }}
                     >
-                      다양한 문제 유형 지원
+                      내 스타일, 내 방식대로 나만의 학습 설계
                     </Typography>
                     <Typography
                       variant="h6"
@@ -448,8 +452,8 @@ function Home() {
                         fontWeight: '400',
                       }}
                     >
-                      객관식, 주관식, 순서 배열형, 빈칸형 문제 등 다양한 유형으로 <br />
-                      생성할 수 있어 맞춤형 학습 콘텐츠를 제공합니다.
+                      기본 요약부터 주제별, 목차별 요약까지, 선택형부터 서술형까지 다양한 옵션을 제공합니다. <br />
+                      나에게 맞는 방식으로 요약하고, 원하는 형태로 문제를 만들어 보세요.
                     </Typography>
                   </Box>
                 </Box>
@@ -489,10 +493,10 @@ function Home() {
                     </Typography>
                     <Box>
                       {[
-                        '문서 업로드 페이지에서 PDF 파일을 업로드하세요.',
-                        '요약 결과를 확인하고 문제 생성 버튼을 클릭하세요.',
-                        '생성된 문제를 검토하고 필요한 경우 수정하세요.',
-                        '최종 결과를 다운로드하여 활용하세요.',
+                        '문서 업로드 페이지에서 강의자료를 업로드하세요.',
+                        '요약 유형 및 세부설정을 설정하고 요약을 생성하세요.',
+                        '생성된 요약을 검토하고 필요한 경우 수정하세요.',
+                        '위와 동일하게 문제를 생성하세요. 다운로드도 가능합니다.',
                       ].map((step, index) => (
                         <Box
                           key={index}
@@ -557,7 +561,7 @@ function Home() {
               fontWeight: '400',
             }}
           >
-            새로운 학습 콘텐츠를 만들어보세요!
+            지금 바로 나만의 요약본 및 문제를 생성하세요!
           </Typography>
           <SecondaryButton
             size="large"
