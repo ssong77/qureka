@@ -77,6 +77,7 @@ export default function Login() {
               variant="outlined"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              autoComplete="off"
             />
             <TextField
               fullWidth
@@ -87,6 +88,7 @@ export default function Login() {
               placeholder="At least 12 characters"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              autoComplete="off"
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">

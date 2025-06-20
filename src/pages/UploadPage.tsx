@@ -1,5 +1,5 @@
 // src/pages/UploadPage.tsx
-import React, { useState } from 'react'
+import React, { useState,useEffect } from 'react'
 import {
   Container,
   Button,
@@ -38,6 +38,7 @@ import ShortTextIcon from '@mui/icons-material/ShortText'
 import DescriptionIcon from '@mui/icons-material/Description'
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { IconButton, Dialog, DialogTitle, DialogContent } from '@mui/material';
+import {jsPDF} from 'jspdf';
 type MainTab = 'summary' | 'problem'
 
 type AiSummaryPromptKey =
@@ -99,6 +100,7 @@ export default function UploadPage() {
   const [mainTab, setMainTab] = useState<MainTab>('summary')
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
+  
   //모달용 state
   const [openSummaryDialog, setOpenSummaryDialog] = useState(false)
   const handleOpenSummary = () => setOpenSummaryDialog(true)
@@ -119,6 +121,7 @@ export default function UploadPage() {
   const [openSumSnackbar, setOpenSumSnackbar] = useState(false)
   const [sumTopicCount, setSumTopicCount] = useState(1) // 주제 요약용
   const [sumKeywordCount, setSumKeywordCount] = useState(3) // 키워드 요약용
+  const [keywords, setKeywords] = useState<string[]>([])
 
   // problem state
   const [qTab, setQTab] = useState(0)
@@ -133,6 +136,21 @@ export default function UploadPage() {
   const [optionFormat, setOptionFormat] = useState('단답형') 
   const [openSumDoneSnackbar, setOpenSumDoneSnackbar] = useState(false)
   const [openQDoneSnackbar, setOpenQDoneSnackbar] = useState(false)
+  useEffect(() => {
+    // 폰트 로드
+    fetch('/fonts/NotoSansKR-Regular.ttf')
+      .then(res => res.arrayBuffer())
+      .then(buf => {
+        const b64 = btoa(
+          new Uint8Array(buf).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        // @ts-ignore
+        jsPDF.API.addFileToVFS('NotoSansKR-Regular.ttf', b64);
+        // @ts-ignore
+        jsPDF.API.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
+      })
+      .catch(console.error);
+  }, []);
 
   // handlers
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,6 +177,12 @@ export default function UploadPage() {
         // 키워드 요약인 경우 키워드 수 추가
         if (sumTab === 4) {
           fd.append('keyword_count', String(sumKeywordCount))
+                if (sumKeywordCount > 0) {
+        const validKeywords = keywords.filter(k => k && k.trim().length > 0);
+        if (validKeywords.length > 0) {
+          fd.append('user_keywords', validKeywords.join(','));
+        }
+      }
         }
         
         const res = await aiSummaryAPI.generateSummary(fd)
@@ -229,21 +253,134 @@ export default function UploadPage() {
       alert('문제 저장 중 오류')
     }
   }
- const handleDownloadSummary = () => {
-   const blob = new Blob([summaryText], { type: 'text/plain;charset=utf-8' });
-   const link = document.createElement('a');
-   link.href = URL.createObjectURL(blob);
-   link.download = `${fileName ?? 'result'}_summary.txt`;
-   link.click();
- };
+  const handleKeywordChange = (index: number, value: string) => {
+  const newKeywords = [...keywords];
+  newKeywords[index] = value;
+  setKeywords(newKeywords);
+};
+// handleDownloadSummary 함수 수정
+const handleDownloadSummary = async () => {
+  try {
+    // 임시 HTML 요소 생성
+    const tempDiv = document.createElement('div');
+    tempDiv.style.padding = '40px';
+    tempDiv.style.width = '595px'; // A4 너비
+    tempDiv.style.fontFamily = 'Arial, sans-serif';
+    tempDiv.style.fontSize = '12px';
+    tempDiv.style.lineHeight = '1.5';
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.backgroundColor = 'white';
+    
+    // 내용 준비
+    const content = summaryText
+      .split('\n')
+      .map(line => `<p style="margin-bottom: 8px;">${line}</p>`)
+      .join('');
+    
+    tempDiv.innerHTML = `
+      <h2 style="margin-bottom: 20px;">${fileName || 'result'} - ${dbSummaryTypeKorean} 요약</h2>
+      ${content}
+    `;
+    document.body.appendChild(tempDiv);
+    
+    // html2canvas로 HTML을 이미지로 변환 (동적 import)
+    const html2canvas = (await import('html2canvas')).default;
+    const canvas = await html2canvas(tempDiv, {
+      scale: 2, // 해상도 향상
+      useCORS: true,
+      logging: false,
+      backgroundColor: 'white'
+    });
+    
+    // 이미지를 PDF로 변환
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4'
+    });
+    
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const ratio = pdfWidth / canvas.width;
+    const imgHeight = canvas.height * ratio;
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+    
+    // 임시 요소 제거
+    document.body.removeChild(tempDiv);
+    
+    // PDF 저장
+    const outputFileName = `${fileName || 'result'}_${dbSummaryTypeKorean}_요약.pdf`;
+    pdf.save(outputFileName);
+    
+  } catch (error) {
+    console.error('PDF 다운로드 중 오류:', error);
+    alert('PDF 다운로드 중 오류가 발생했습니다.');
+  }
+};
 
- const handleDownloadQuestion = () => {
-   const blob = new Blob([questionText], { type: 'text/plain;charset=utf-8' });
-   const link = document.createElement('a');
-   link.href = URL.createObjectURL(blob);
-   link.download = `${fileName ?? 'result'}_questions.txt`;
-   link.click();
- };
+// handleDownloadQuestion 함수 수정
+const handleDownloadQuestion = async () => {
+  try {
+    // 임시 HTML 요소 생성
+    const tempDiv = document.createElement('div');
+    tempDiv.style.padding = '40px';
+    tempDiv.style.width = '595px'; // A4 너비
+    tempDiv.style.fontFamily = 'Arial, sans-serif';
+    tempDiv.style.fontSize = '12px';
+    tempDiv.style.lineHeight = '1.5';
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.backgroundColor = 'white';
+    
+    // 내용 준비
+    const content = questionText
+      .split('\n')
+      .map(line => `<p style="margin-bottom: 8px;">${line}</p>`)
+      .join('');
+    
+    tempDiv.innerHTML = `
+      <h2 style="margin-bottom: 20px;">${fileName || 'result'} - ${aiQuestionPromptKeys_Korean[qTab]} 문제</h2>
+      ${content}
+    `;
+    document.body.appendChild(tempDiv);
+    
+    // html2canvas로 HTML을 이미지로 변환 (동적 import)
+    const html2canvas = (await import('html2canvas')).default;
+    const canvas = await html2canvas(tempDiv, {
+      scale: 2, // 해상도 향상
+      useCORS: true,
+      logging: false,
+      backgroundColor: 'white'
+    });
+    
+    // 이미지를 PDF로 변환
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4'
+    });
+    
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const ratio = pdfWidth / canvas.width;
+    const imgHeight = canvas.height * ratio;
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+    
+    // 임시 요소 제거
+    document.body.removeChild(tempDiv);
+    
+    // PDF 저장
+    const outputFileName = `${fileName || 'result'}_${aiQuestionPromptKeys_Korean[qTab]}_문제.pdf`;
+    pdf.save(outputFileName);
+    
+  } catch (error) {
+    console.error('PDF 다운로드 중 오류:', error);
+    alert('PDF 다운로드 중 오류가 발생했습니다.');
+  }
+};
 
   return (
     <>
@@ -253,7 +390,7 @@ export default function UploadPage() {
         sx={{
           minHeight: '100vh',
           p: 4,
-          pt: '100px',
+          pt: '40px',
           background: theme =>
             theme.palette.mode === 'light'
               ? 'linear-gradient(145deg, #ffffff 0%, #f4f7fa 100%)'
@@ -261,7 +398,7 @@ export default function UploadPage() {
         }}
       >
         <Container maxWidth="md">
-          <Typography variant="h5" align="center" mb={3}>
+          <Typography variant="h1" align="center" mb={3}>
             문서 업로드 및 {mainTab === 'summary' ? '요약' : '문제 생성'}
           </Typography>
 
@@ -428,6 +565,7 @@ export default function UploadPage() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
+                    
                   }}
                 >
                   <TuneIcon sx={{ color: '#6366f1' }} />
@@ -566,7 +704,7 @@ export default function UploadPage() {
                             fontWeight: 500 
                           }}
                         >
-                          <FormatListNumberedIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+                          {/* <FormatListNumberedIcon sx={{ fontSize: 18, color: '#f59e0b' }} />*/}
                           문장 수
                         </Typography>
                         <FormControl fullWidth>
@@ -642,7 +780,7 @@ export default function UploadPage() {
                             fontWeight: 500 
                           }}
                         >
-                          <SubjectIcon sx={{ fontSize: 18, color: '#3b82f6' }} />
+                          {/*<SubjectIcon sx={{ fontSize: 18, color: '#3b82f6' }} />*/}
                           주제 수
                         </Typography>
                         <FormControl fullWidth>
@@ -720,7 +858,7 @@ export default function UploadPage() {
                           fontWeight: 500 
                         }}
                       >
-                        <ShortTextIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+                        {/*<ShortTextIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />*/}
                         키워드 수
                       </Typography>
                       <FormControl fullWidth>
@@ -782,6 +920,7 @@ export default function UploadPage() {
                         </Select>
                       </FormControl>
                     </Box>
+                    
                   ) : (
                     // 기본/핵심/목차 요약일 때는 문장 수
                     <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
@@ -853,6 +992,73 @@ export default function UploadPage() {
                       </Box>
                     </Box>
                   )}
+                  {/* 키워드 입력 필드 (새로 추가) */}
+                {sumTab === 4 && sumKeywordCount > 0 && (
+                  <Box sx={{ width: '100%', mt: 2, p:2, backgroundColor: '#f3f4f6', borderRadius: 2 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ 
+                        mb: 3, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 0.5, 
+                        color: '#475569', 
+                        fontWeight: 600,
+                        fontSize: '0.95rem'
+                      }}
+                    >
+                      <ShortTextIcon sx={{ fontSize: 20, color: '#8b5cf6' }} />
+                      키워드 입력 (각 10자 이내)
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                      {Array.from({ length: sumKeywordCount }).map((_, index) => (
+                        <TextField
+                          key={index}
+                          label={`키워드 ${index + 1}`}
+                          value={keywords[index] || ''}
+                          onChange={(e) => handleKeywordChange(index, e.target.value)}
+                          placeholder="키워드 입력"
+                          size="small"
+                          inputProps={{ maxLength: 10 }}
+                          sx={{ 
+                            width: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)' },
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              backgroundColor: '#ffffff',
+                              border: '2px solid transparent',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                              '&:hover': {
+                                borderColor: '#8b5cf6',
+                                backgroundColor: '#fefefe',
+                              },
+                              '&.Mui-focused': {
+                                borderColor: '#8b5cf6',
+                                boxShadow: '0 0 0 3px rgba(139,92,246,0.1)',
+                              },
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                border: 'none',
+                              },
+                            },
+                            '& .MuiInputLabel-root': {
+                              backgroundColor: 'white',
+                              padding: '0 4px',
+                              fontWeight: 500,
+                              '&.Mui-focused': {
+                                color: '#8b5cf6',
+                                fontWeight: 600,
+                              },
+                            },
+                            '& .MuiInputLabel-shrink': {
+                              backgroundColor: 'white',
+                              padding: '0 4px',
+                            }
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
                 </Box>
 
                 {/* Optional: Summary Preview Card */}
@@ -932,7 +1138,7 @@ export default function UploadPage() {
                         요약 결과
                       </Typography>
                       <Button variant="outlined" size="small" onClick={handleDownloadSummary}>
-                        ⬇️ 다운로드
+                        📄 PDF 다운로드
                       </Button>
                     </Box>
                     <TextField
@@ -962,18 +1168,24 @@ export default function UploadPage() {
             >
               <Alert
                 severity="success"
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                 }}
                 action={
                   <Button
                     color="inherit"
                     size="small"
                     onClick={() => setOpenSumDoneSnackbar(false)}
+                    sx={{ alignSelf: 'center' }}
                   >
                     확인
                   </Button>
                 }
               >
-                요약 생성이 완료되었습니다!
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  요약 저장이 완료되었습니다!
+                </Box>
               </Alert>
             </Snackbar>
             </>
@@ -1008,7 +1220,7 @@ export default function UploadPage() {
                         bgcolor: 'transparent',
                         borderRadius: 2,
                         minHeight: 48,
-                        fontSize: '0.9rem',
+                        fontSize: '1.2rem',
                         fontWeight: 500,
                         '&.Mui-selected': {
                           bgcolor: 'primary.main',
@@ -1160,7 +1372,8 @@ export default function UploadPage() {
                   {qTab === 0 && (
                     <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
                       <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, color: '#475569', fontWeight: 500 }}>
-                        <FormatListNumberedIcon sx={{ fontSize: 18, color: '#f59e0b' }} /> 보기 수
+                        {/*<FormatListNumberedIcon sx={{ fontSize: 18, color: '#f59e0b' }} />*/}
+                         보기 수
                       </Typography>
                       <FormControl fullWidth>
                         <Select
@@ -1198,7 +1411,7 @@ export default function UploadPage() {
                           fontWeight: 500,
                         }}
                       >
-                        <SubjectIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+                        {/*<SubjectIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />*/}
                         보기 형식
                       </Typography>
                       <FormControl fullWidth>
@@ -1258,7 +1471,7 @@ export default function UploadPage() {
                         fontWeight: 500,
                       }}
                     >
-                      <FormatListNumberedIcon sx={{ fontSize: 18, color: '#3b82f6' }} /> 
+                      {/*<FormatListNumberedIcon sx={{ fontSize: 18, color: '#3b82f6' }} /> */} 
                       선택지 수
                     </Typography>
                     <FormControl fullWidth>
@@ -1329,7 +1542,7 @@ export default function UploadPage() {
                         fontWeight: 500,
                       }}
                     >
-                      <ShortTextIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+                      {/*<ShortTextIcon sx={{ fontSize: 18, color: '#f59e0b' }} />*/}
                       빈칸 수
                     </Typography>
                     <FormControl fullWidth>
@@ -1485,18 +1698,22 @@ export default function UploadPage() {
           >
             <Alert
               severity="success"
-              sx={{ borderRadius: 2 }}
+              sx={{ borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+ }}
               action={
                 <Button
                   color="inherit"
                   size="small"
                   onClick={() => setOpenQDoneSnackbar(false)}
+                  sx={{ alignSelf: 'center' }}
                 >
                   확인
                 </Button>
               }
             >
-              문제가 저장되었습니다!
+              문제 저장이 완료되었습니다!
             </Alert>
           </Snackbar>
             </>
