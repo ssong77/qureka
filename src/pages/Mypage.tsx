@@ -105,15 +105,7 @@ export default function Mypage() {
       .then(([sRes, qRes]) => {
         setSummaryItems(sRes.data.summaries.map(s => {
           const date = new Date(s.created_at);
-          // 유형 정보 매핑
-          const summaryTypeMap: {[key: string]: string} = {
-            'basic': '기본 요약',
-            'concise': '핵심 요약',
-            'topic': '주제 요약',
-            'toc': '목차 요약',
-            'keyword': '키워드 요약'
-          };
-          
+ 
           return {
             id: s.selection_id,
             name: s.file_name,
@@ -124,20 +116,12 @@ export default function Mypage() {
               hour: '2-digit', minute: '2-digit' 
             }),
             text: s.summary_text,
-            summaryType: summaryTypeMap[s.summary_type] || '기본 요약'
+            summaryType: s.summary_type || '기본 요약'
           };
         }));
         
         setQuestionItems(qRes.data.questions.map(q => {
           const date = new Date(q.created_at);
-          
-          // 문제 유형 매핑
-          const questionTypeMap: {[key: string]: string} = {
-            'multiple-choice': '객관식',
-            'short-answer': '주관식',
-            'fill-in-the-blank': '빈칸 채우기',
-            'ox-quiz': 'O/X 퀴즈'
-          };
           
           try {
             const data = JSON.parse(q.question_text);
@@ -152,7 +136,7 @@ export default function Mypage() {
               }),
               text: data.question,
               type: data.type,
-              displayType: questionTypeMap[data.type] || '기타',
+              displayType: q.question_type || '기타',
               options: data.options,
               answer: data.answer,
               correct_option_index: data.correct_option_index,
@@ -170,7 +154,7 @@ export default function Mypage() {
               }),
               text: q.question_text,
               type: 'unknown',
-              displayType: '기타'
+              displayType: q.question_type || '기타'
             };
           }
         }));
