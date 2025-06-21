@@ -251,27 +251,27 @@ export default function Mypage() {
       <Header />
       <Box sx={{ pt: '60px', px: 4, pb: 6, maxWidth: 1200, mx: 'auto' }}>
         <Typography 
-  variant="h2" 
-  fontWeight="bold" 
-  gutterBottom 
-  sx={{ 
-    mb: 4,
-    color: 'primary.main',
-    borderBottom: '2px solid',
-    borderColor: 'primary.light',
-    paddingBottom: 2,
-    position: 'relative',
-    '&::after': {
-      content: '""',
-      position: 'absolute',
-      bottom: -2,
-      left: 0,
-      width: '80px',
-      height: '4px',
-      backgroundColor: 'primary.dark'
-    }
-  }}
->
+          variant="h2" 
+          fontWeight="bold" 
+          gutterBottom 
+          sx={{ 
+            mb: 4,
+            color: 'text.primary',
+            borderBottom: '2px solid',
+            borderColor: 'primary.light',
+            paddingBottom: 2,
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: -2,
+              left: 0,
+              width: '80px',
+              height: '4px',
+              backgroundColor: 'primary.dark'
+            }
+          }}
+        >
           마이페이지
         </Typography>
 
