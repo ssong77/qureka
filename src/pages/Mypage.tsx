@@ -65,11 +65,12 @@ export default function Mypage() {
   const [currentQuizQuestions, setCurrentQuizQuestions] = useState<QuestionItem[]>([])
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string | number }>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
-  const [incorrectNoteOpen, setIncorrectNoteOpen] = useState(false)
-  const [incorrectAnswers, setIncorrectAnswers] = useState<IncorrectAnswerItem[]>(() => {
-    const saved = localStorage.getItem('incorrectNotes')
-    return saved ? JSON.parse(saved) : []
-  })
+  // 오답 노트 관련 state
+  // const [incorrectNoteOpen, setIncorrectNoteOpen] = useState(false)
+  // const [incorrectAnswers, setIncorrectAnswers] = useState<IncorrectAnswerItem[]>(() => {
+  //   const saved = localStorage.getItem('incorrectNotes')
+  //   return saved ? JSON.parse(saved) : []
+  // })
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success'
   })
@@ -164,9 +165,9 @@ export default function Mypage() {
   }, [user])
 
   // 오답 노트 로컬 저장
-  useEffect(() => {
-    localStorage.setItem('incorrectNotes', JSON.stringify(incorrectAnswers))
-  }, [incorrectAnswers])
+  // useEffect(() => {
+  //   localStorage.setItem('incorrectNotes', JSON.stringify(incorrectAnswers))
+  // }, [incorrectAnswers])
 
   // 다이얼로그 열기 함수
   const handleOpenDialog = (item: FileItem | QuestionItem) => {
@@ -208,39 +209,39 @@ export default function Mypage() {
     }
   };
 
-  // 퀴즈 채점
-  const handleQuizSubmit = () => {
-    setQuizSubmitted(true)
-    const newIncorrect: IncorrectAnswerItem[] = []
-    currentQuizQuestions.forEach(q => {
-      const ua = userAnswers[q.id]
-      let correct = false
-      if (['multiple-choice', 'ox-quiz'].includes(q.type)) {
-        correct = ua === q.correct_option_index
-      } else {
-        correct = (ua as string)?.toLowerCase().trim() === (q.answer as string)?.toLowerCase().trim()
-      }
-      if (!correct) {
-        newIncorrect.push({
-          ...q,
-          user_answer: ua ?? '',
-          is_correct: false
-        })
-      }
-    })
-    const updated = [...incorrectAnswers]
-    newIncorrect.forEach(nq => {
-      if (!updated.find(x => x.id === nq.id && x.name === nq.name)) {
-        updated.push(nq)
-      }
-    })
-    setIncorrectAnswers(updated)
-  }
+  // // 퀴즈 채점
+  // const handleQuizSubmit = () => {
+  //   setQuizSubmitted(true)
+  //   const newIncorrect: IncorrectAnswerItem[] = []
+  //   currentQuizQuestions.forEach(q => {
+  //     const ua = userAnswers[q.id]
+  //     let correct = false
+  //     if (['multiple-choice', 'ox-quiz'].includes(q.type)) {
+  //       correct = ua === q.correct_option_index
+  //     } else {
+  //       correct = (ua as string)?.toLowerCase().trim() === (q.answer as string)?.toLowerCase().trim()
+  //     }
+  //     if (!correct) {
+  //       newIncorrect.push({
+  //         ...q,
+  //         user_answer: ua ?? '',
+  //         is_correct: false
+  //       })
+  //     }
+  //   })
+  //   const updated = [...incorrectAnswers]
+  //   newIncorrect.forEach(nq => {
+  //     if (!updated.find(x => x.id === nq.id && x.name === nq.name)) {
+  //       updated.push(nq)
+  //     }
+  //   })
+  //   setIncorrectAnswers(updated)
+  // }
 
-  // 오답 노트에서 삭제
-  const handleDeleteIncorrectNote = (id: number, name: string) => {
-    setIncorrectAnswers(prev => prev.filter(i => !(i.id === id && i.name === name)))
-  }
+  // // 오답 노트에서 삭제
+  // const handleDeleteIncorrectNote = (id: number, name: string) => {
+  //   setIncorrectAnswers(prev => prev.filter(i => !(i.id === id && i.name === name)))
+  // }
 
   if (loading) return <Box textAlign="center" mt={8}><CircularProgress/></Box>
   if (error) return <Box textAlign="center" mt={8}><Alert severity="error">{error}</Alert></Box>
@@ -249,7 +250,28 @@ export default function Mypage() {
     <Box sx={{ bgcolor: 'background.paper', minHeight: '100vh' }}>
       <Header />
       <Box sx={{ pt: '60px', px: 4, pb: 6, maxWidth: 1200, mx: 'auto' }}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 4 }}>
+        <Typography 
+  variant="h2" 
+  fontWeight="bold" 
+  gutterBottom 
+  sx={{ 
+    mb: 4,
+    color: 'primary.main',
+    borderBottom: '2px solid',
+    borderColor: 'primary.light',
+    paddingBottom: 2,
+    position: 'relative',
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: -2,
+      left: 0,
+      width: '80px',
+      height: '4px',
+      backgroundColor: 'primary.dark'
+    }
+  }}
+>
           마이페이지
         </Typography>
 
@@ -263,7 +285,7 @@ export default function Mypage() {
             {snackbar.message}
           </Alert>
         </Snackbar>
-
+        {/* // 오답 노트 보기 버튼
         <Button
           variant="outlined"
           color="secondary"
@@ -272,12 +294,14 @@ export default function Mypage() {
           onClick={() => setIncorrectNoteOpen(true)}
         >
           오답 노트 보기
-        </Button>
+        </Button> */}
 
         <FileListSection
           title="📄 저장된 요약"
+          titleVariant="h4"
           items={summaryItems}
           currentPage={summaryPage}
+          
           onPageChange={(_, p) => setSummaryPage(p)}
           onView={handleOpenDialog}
           onDelete={item => handleDeleteConfirm(item.id, 'summary')}
@@ -285,6 +309,7 @@ export default function Mypage() {
 
         <FileListSection
           title="❓ 생성된 문제"
+          titleVariant="h4"
           items={questionItems}
           currentPage={questionPage}
           onPageChange={(_, p) => setQuestionPage(p)}
@@ -388,7 +413,7 @@ export default function Mypage() {
             </Paper>
           ))}
         </DialogContent>
-        <DialogActions>
+        {/* <DialogActions>
           {!quizSubmitted && (
             <Button onClick={handleQuizSubmit} variant="contained" color="primary">채점하기</Button>
           )}
@@ -396,11 +421,11 @@ export default function Mypage() {
             <Button onClick={() => setQuizDialogOpen(false)} variant="outlined" color="secondary">확인</Button>
           )}
           <Button onClick={() => setQuizDialogOpen(false)}>닫기</Button>
-        </DialogActions>
+        </DialogActions> */}
       </Dialog>
 
       {/* 오답 노트 다이얼로그 */}
-      <Dialog open={incorrectNoteOpen} onClose={() => setIncorrectNoteOpen(false)} maxWidth="md" fullWidth>
+      {/* <Dialog open={incorrectNoteOpen} onClose={() => setIncorrectNoteOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>오답 노트</DialogTitle>
         <DialogContent dividers>
           {incorrectAnswers.length === 0
@@ -454,7 +479,7 @@ export default function Mypage() {
         <DialogActions>
           <Button onClick={() => setIncorrectNoteOpen(false)}>닫기</Button>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
       
       {/* 삭제 확인 다이얼로그 */}
       <Dialog
@@ -486,9 +511,10 @@ export default function Mypage() {
 }
 
 function FileListSection({
-  title, items, currentPage, onPageChange, onView, onQuizStart, onDelete
+  title, titleVariant = 'h6', items, currentPage, onPageChange, onView, onQuizStart, onDelete
 }: {
   title: string
+  titleVariant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
   items: FileItem[] | QuestionItem[]
   currentPage: number
   onPageChange: (e: React.ChangeEvent<unknown>, p: number) => void
@@ -612,7 +638,7 @@ function FileListSection({
 
   return (
     <Box mb={6}>
-      <Typography variant="h6" fontWeight="bold" gutterBottom>{title}</Typography>
+      <Typography variant={titleVariant} fontWeight="bold" gutterBottom>{title}</Typography>
       <TableContainer component={Paper}>
         <Table size="medium">
           <TableHead>
