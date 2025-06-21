@@ -846,6 +846,81 @@ const handleDownloadQuestion = async () => {
                     
                   ) : sumTab === 4 ? (
                     // 키워드 요약일 때는 키워드 수
+                      <>
+    {/* 문장 수 콤보박스 */}
+    <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
+      <Typography
+        variant="subtitle2"
+        sx={{ 
+          mb: 1, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 0.5, 
+          color: '#475569', 
+          fontWeight: 500 
+        }}
+      >
+        문장 수
+      </Typography>
+      <FormControl fullWidth>
+        <Select
+          value={sumSentCount}
+          onChange={e => setSumSentCount(Number(e.target.value))}
+          displayEmpty
+          sx={{
+            borderRadius: 2,
+            backgroundColor: '#ffffff',
+            border: '2px solid transparent',
+            '&:hover': {
+              borderColor: '#f59e0b',
+              backgroundColor: '#fefefe',
+            },
+            '&.Mui-focused': {
+              borderColor: '#f59e0b',
+              boxShadow: '0 0 0 3px rgba(245,158,11,0.1)',
+            },
+            '& .MuiOutlinedInput-notchedOutline': {
+              border: 'none',
+            },
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          }}
+        >
+          {[3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+            <MenuItem
+              key={n}
+              value={n}
+              sx={{
+                '&:hover': { backgroundColor: '#fffbeb' },
+                '&.Mui-selected': {
+                  backgroundColor: '#fef3c7',
+                  '&:hover': { backgroundColor: '#fde68a' },
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    backgroundColor: '#f59e0b',
+                    color: 'white',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {n}
+                </Box>
+                {n}개
+              </Box>
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    </Box>
                     <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
                       <Typography
                         variant="subtitle2"
@@ -920,7 +995,7 @@ const handleDownloadQuestion = async () => {
                         </Select>
                       </FormControl>
                     </Box>
-                    
+                    </>
                   ) : (
                     // 기본/핵심/목차 요약일 때는 문장 수
                     <Box sx={{ width: { xs: '100%', sm: 'calc(33.333% - 16px)' } }}>
@@ -1071,15 +1146,20 @@ const handleDownloadQuestion = async () => {
                     border: '1px dashed rgba(99,102,241,0.2)',
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: '#6366f1', fontWeight: 500,fontSize: '1rem' }}>
-                    설정 미리보기: {sumField} 분야의 {sumLevel} 수준으로 
-                    {sumTab === 0 && ` ${sumSentCount}개 문장 기본 요약`}
-                    {sumTab === 1 && ` ${sumSentCount}개 문장 핵심 요약`}
-                    {sumTab === 2 && ` ${sumTopicCount}개 주제 요약`}
-                    {sumTab === 3 && ` ${sumSentCount}개 문장 목차 요약`}
-                    {sumTab === 4 && ` ${sumKeywordCount === 0 ? '자동' : sumKeywordCount + '개'} 키워드 요약`}
-                  </Typography>
-                </Box>
+                <Typography variant="caption" sx={{ color: '#6366f1', fontWeight: 500, fontSize: '1rem' }}>
+                  설정 미리보기: {sumField} 분야의 {sumLevel} 수준으로 
+                  {sumTab === 0 && ` ${sumSentCount}개 문장 기본 요약`}
+                  {sumTab === 1 && ` ${sumSentCount}개 문장 핵심 요약`}
+                  {sumTab === 2 && ` ${sumTopicCount}개 주제 요약`}
+                  {sumTab === 3 && ` ${sumSentCount}개 문장 목차 요약`}
+                  {sumTab === 4 && ` ${sumSentCount}개 문장, ${sumKeywordCount === 0 ? '자동' : sumKeywordCount + '개'} 키워드 요약`}
+                  {sumTab === 4 && sumKeywordCount > 0 && keywords.filter(k => k && k.trim()).length > 0 && (
+                    <Box component="span" sx={{ display: 'block', mt: 1, color: '#8b5cf6' }}>
+                      입력 키워드: {keywords.filter(k => k && k.trim()).join(', ')}
+                    </Box>
+                  )}
+                </Typography>
+              </Box>
               </Box>
 
               {/* Generate Summary */}
@@ -1220,7 +1300,7 @@ const handleDownloadQuestion = async () => {
                         bgcolor: 'transparent',
                         borderRadius: 2,
                         minHeight: 48,
-                        fontSize: '1.2rem',
+                        fontSize: '0.9rem',
                         fontWeight: 500,
                         '&.Mui-selected': {
                           bgcolor: 'primary.main',
