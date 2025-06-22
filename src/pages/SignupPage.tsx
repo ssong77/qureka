@@ -10,7 +10,8 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
-  Stack
+  Stack,
+  FormHelperText
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
@@ -39,10 +40,38 @@ export default function SignupPage() {
     password: '',
     confirmPassword: ''
   })
+  
+  // 유효성 검사 상태
+  const [phoneError, setPhoneError] = useState<string>('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
+    
+    // 전화번호 형식 검증
+    if (name === 'phone') {
+      validatePhoneNumber(value)
+    }
+  }
+
+  // 전화번호 형식 검증 함수
+  const validatePhoneNumber = (phone: string) => {
+    // 하이픈 제거 후 검사
+    const cleanPhone = phone.replace(/-/g, '')
+    
+    // 빈 값이면 오류 메시지 없음
+    if (!cleanPhone) {
+      setPhoneError('')
+      return
+    }
+    
+    // 010으로 시작하는 11자리 숫자인지 확인
+    const phoneRegex = /^010\d{8}$/
+    if (!phoneRegex.test(cleanPhone)) {
+      setPhoneError('010으로 시작하는 11자리 숫자를 입력해주세요')
+    } else {
+      setPhoneError('')
+    }
   }
 
   const handleGenderChange = (e: SelectChangeEvent<string>) => {
@@ -72,25 +101,65 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // 필수 필드 검증
+    if (!form.userId.trim() || !form.name.trim() || !form.age || !form.gender || !form.phone.trim() || !form.password.trim()) {
+      alert('필수 항목을 모두 입력해주세요.')
+      return
+    }
+    
+    // 비밀번호 일치 검증
     if (form.password !== form.confirmPassword) {
       alert('비밀번호가 일치하지 않습니다.')
       return
     }
+    
+    // 전화번호 형식 검증
+    const cleanPhone = form.phone.replace(/-/g, '')
+    const phoneRegex = /^010\d{8}$/
+    if (!phoneRegex.test(cleanPhone)) {
+      alert('올바른 전화번호 형식이 아닙니다. 010으로 시작하는 11자리 숫자를 입력해주세요.')
+      return
+    }
+    
     try {
       await userAPI.register({
         userid: form.userId,
         name: form.name,
         age: Number(form.age),
         gender: form.gender,
-        phone: form.phone,
+        phone: cleanPhone, // 하이픈 제거하여 저장
         email: form.email || undefined,
         password: form.password
       })
       alert('회원가입이 완료되었습니다.')
       navigate('/login')
     } catch (err: any) {
-      alert('회원가입 실패: ' + (err.response?.data?.message || err.message))
+      const errorMessage = err.response?.data?.message || err.message
+      
+      // 오류 메시지에 따른 안내 처리
+      if (errorMessage.includes('이미 등록된 전화번호')) {
+        alert('이미 등록된 전화번호입니다.')
+      } else if (errorMessage.includes('이미 등록된 이름')) {
+        alert('이미 등록된 이름입니다.')
+      } else {
+        alert('회원가입 실패: ' + errorMessage)
+      }
     }
+  }
+
+  // 전화번호 자동 하이픈 추가 함수 (선택적)
+  const formatPhoneNumber = (value: string) => {
+    const numbers = value.replace(/[^\d]/g, '')
+    if (numbers.length <= 3) return numbers
+    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedNumber = formatPhoneNumber(e.target.value)
+    setForm(prev => ({ ...prev, phone: formattedNumber }))
+    validatePhoneNumber(formattedNumber)
   }
 
   return (
@@ -98,7 +167,7 @@ export default function SignupPage() {
       <Header />
       <Container 
         maxWidth="sm"            // sm: 약 600px 폭 제한
-        sx={{ mt: 8 }}
+        sx={{ mt: 5 }}
       >
         <Box
           component="form"
@@ -110,7 +179,7 @@ export default function SignupPage() {
             p: 4,
           }}
         >
-          <Typography variant="h5" align="center" gutterBottom>
+          <Typography variant="h2" align="center" gutterBottom>
             회원가입
           </Typography>
 
@@ -183,10 +252,15 @@ export default function SignupPage() {
                 required
                 name="phone"
                 label="전화번호"
-                placeholder="010-1234-5678"
+                placeholder="01012345678"
                 value={form.phone}
-                onChange={handleChange}
+                onChange={handlePhoneChange}
+                error={!!phoneError}
+                helperText={phoneError || "010으로 시작하는 11자리 숫자"}
                 sx={{ flex: 1 }}
+                inputProps={{
+                  maxLength: 13 // 하이픈 포함 최대 길이
+                }}
               />
             </Stack>
 
@@ -223,11 +297,22 @@ export default function SignupPage() {
               placeholder="비밀번호 재입력"
               value={form.confirmPassword}
               onChange={handleChange}
+              error={form.confirmPassword !== '' && form.password !== form.confirmPassword}
+              helperText={
+                form.confirmPassword !== '' && form.password !== form.confirmPassword
+                  ? "비밀번호가 일치하지 않습니다"
+                  : ""
+              }
             />
 
             {/* 회원가입 버튼 */}
             <Box display="flex" justifyContent="center" mt={2}>
-              <Button variant="contained" type="submit" sx={{ width: 200, height: 48 }}>
+              <Button 
+                variant="contained" 
+                type="submit" 
+                sx={{ width: 200, height: 48 }}
+                disabled={!!phoneError} // 전화번호 오류가 있으면 버튼 비활성화
+              >
                 회원가입
               </Button>
             </Box>
