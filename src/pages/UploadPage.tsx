@@ -398,7 +398,7 @@ const handleDownloadQuestion = async () => {
         }}
       >
         <Container maxWidth="md">
-          <Typography variant="h1" align="center" mb={3}>
+          <Typography variant="h1" fontWeight="500" align="center" mb={3}>
             문서 업로드
           </Typography>
 
@@ -1348,9 +1348,11 @@ const handleDownloadQuestion = async () => {
                       <SettingsIcon sx={{ color: '#6366f1' }} />
                       문제 설정
                     </Box>
-                    <IconButton size="small" onClick={handleOpenSummary}>
-                      <ZoomInIcon fontSize="small" />
-                    </IconButton>
+                    <Button 
+                      variant="outlined"
+                      onClick={handleOpenSummary}>
+                      만든 요약본 보기
+                    </Button>
                 </Typography>
 
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
@@ -1702,10 +1704,10 @@ const handleDownloadQuestion = async () => {
               </Box>
               {/* Dialog 삽입 */}
               <Dialog open={openSummaryDialog} onClose={handleCloseSummary} maxWidth="md" fullWidth>
-                <DialogTitle>기반 요약 내용 보기</DialogTitle>
+                <DialogTitle>요약 내용 보기</DialogTitle>
                 <DialogContent dividers>
                   <Typography component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
-                    {summaryText || '먼저 요약을 생성 또는 불러와 주세요.'}
+                    {summaryText || '먼저 요약을 생성해 주세요.'}
                   </Typography>
                 </DialogContent>
               </Dialog>

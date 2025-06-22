@@ -15,7 +15,9 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
-import { userAPI } from '../services/api' 
+import { userAPI } from '../services/api'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import ErrorIcon from '@mui/icons-material/Error'
 
 interface SignUpForm {
   userId: string
@@ -43,10 +45,22 @@ export default function SignupPage() {
   
   // 유효성 검사 상태
   const [phoneError, setPhoneError] = useState<string>('')
+  
+  // 아이디 중복 확인 상태
+  const [isIdChecked, setIsIdChecked] = useState<boolean>(false)
+  const [isIdValid, setIsIdValid] = useState<boolean>(false)
+  const [idCheckMessage, setIdCheckMessage] = useState<string>('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
+    
+    // 아이디 변경 시 중복확인 상태 초기화
+    if (name === 'userId') {
+      setIsIdChecked(false)
+      setIsIdValid(false)
+      setIdCheckMessage('')
+    }
     
     // 전화번호 형식 검증
     if (name === 'phone') {
@@ -81,26 +95,38 @@ export default function SignupPage() {
   const handleIdCheck = async () => {
     // 입력 값 검증
     if (!form.userId.trim()) {
-      alert('아이디를 입력해주세요.');
+      setIdCheckMessage('아이디를 입력해주세요.');
+      setIsIdChecked(true);
+      setIsIdValid(false);
       return;
     }
 
     try {
       const { data } = await userAPI.checkUserid(form.userId)
-      alert(data.message) // 성공 메시지 표시 (예: "사용 가능한 아이디입니다.")
+      setIdCheckMessage('사용 가능한 아이디입니다.'); 
+      setIsIdChecked(true);
+      setIsIdValid(true);
     } catch (err: any) {
       // 백엔드에서 오는 실제 오류 메시지 표시
       if (err.response?.data?.message) {
-        alert(err.response.data.message); // "이미 사용 중인 아이디입니다." 같은 메시지 표시
+        setIdCheckMessage(err.response.data.message);
       } else {
-        alert('중복 확인 중 오류가 발생했습니다.');
+        setIdCheckMessage('중복 확인 중 오류가 발생했습니다.');
       }
+      setIsIdChecked(true);
+      setIsIdValid(false);
       console.error('ID 중복 확인 오류:', err);
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // 아이디 중복확인 여부 검증
+    if (!isIdChecked || !isIdValid) {
+      alert('아이디 중복 확인이 필요합니다.');
+      return;
+    }
     
     // 필수 필드 검증
     if (!form.userId.trim() || !form.name.trim() || !form.age || !form.gender || !form.phone.trim() || !form.password.trim()) {
@@ -148,7 +174,7 @@ export default function SignupPage() {
     }
   }
 
-  // 전화번호 자동 하이픈 추가 함수 (선택적)
+  // 전화번호 자동 하이픈 추가 함수
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/[^\d]/g, '')
     if (numbers.length <= 3) return numbers
@@ -166,7 +192,7 @@ export default function SignupPage() {
     <>
       <Header />
       <Container 
-        maxWidth="sm"            // sm: 약 600px 폭 제한
+        maxWidth="sm"
         sx={{ mt: 5 }}
       >
         <Box
@@ -185,25 +211,40 @@ export default function SignupPage() {
 
           <Stack spacing={3}>
             {/* 1행: 아이디 + 중복확인 */}
-            <Stack direction="row" spacing={2}>
-              <TextField
-                fullWidth
-                required
-                name="userId"
-                label="아이디"
-                placeholder="사용할 아이디 입력"
-                value={form.userId}
-                onChange={handleChange}
-                sx={{ flex: 1 }}
-              />
-              <Button
-                variant="outlined"
-                onClick={handleIdCheck}
-                sx={{ width: 120 }}
-              >
-                중복 확인
-              </Button>
-            </Stack>
+            <Box>
+              <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                <TextField
+                  fullWidth
+                  required
+                  name="userId"
+                  label="아이디"
+                  placeholder="사용할 아이디 입력"
+                  value={form.userId}
+                  onChange={handleChange}
+                  sx={{ flex: 1 }}
+                  error={isIdChecked && !isIdValid}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={handleIdCheck}
+                  sx={{ width: 120 }}
+                >
+                  중복 확인
+                </Button>
+              </Stack>
+              {isIdChecked && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  ml: 1, 
+                  mt: 0.5,
+                  color: isIdValid ? 'success.main' : 'error.main'
+                }}>
+                  {isIdValid ? <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} /> : <ErrorIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                  <Typography variant="caption">{idCheckMessage}</Typography>
+                </Box>
+              )}
+            </Box>
 
             {/* 2행: 이름 + 나이 */}
             <Stack direction="row" spacing={2}>
@@ -311,7 +352,7 @@ export default function SignupPage() {
                 variant="contained" 
                 type="submit" 
                 sx={{ width: 200, height: 48 }}
-                disabled={!!phoneError} // 전화번호 오류가 있으면 버튼 비활성화
+                disabled={!!phoneError || !isIdValid || !isIdChecked} // 전화번호 오류 또는 아이디 중복확인을 하지 않은 경우 버튼 비활성화
               >
                 회원가입
               </Button>
