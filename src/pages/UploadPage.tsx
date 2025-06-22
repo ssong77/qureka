@@ -399,7 +399,7 @@ const handleDownloadQuestion = async () => {
       >
         <Container maxWidth="md">
           <Typography variant="h1" align="center" mb={3}>
-            문서 업로드 및 {mainTab === 'summary' ? '요약' : '문제 생성'}
+             문서 업로드 {/*및 {mainTab === 'summary' ? '요약' : '문제 생성'} */}
           </Typography>
 
           {/* Upload Box */}
