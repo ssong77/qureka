@@ -18,6 +18,7 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom'
 
 import { useAuth } from '../contexts/AuthContext'
 import { userAPI } from '../services/api'
+import Header from '../components/Header'
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
@@ -48,18 +49,24 @@ export default function Login() {
   }
 
   return (
-    <Box
-      sx={{
-        bgcolor: '#f4f2f7',
-        minHeight: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}
-    >
-      <Container maxWidth="sm">
-        <Paper elevation={3} sx={{ p: 6, textAlign: 'center' }}>
-          <Typography variant="h5" fontWeight={600} mb={3}>
+    <>
+      <Header />
+      <Container 
+        maxWidth="sm" 
+        sx={{ mt: 8 }}
+      >
+        <Box
+          component="form"
+          noValidate
+          autoComplete="off"
+          sx={{
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 3,
+            p: 4,
+          }}
+        >
+          <Typography variant="h5" align="center" fontWeight={600} mb={3}>
             어서오세요!
           </Typography>
 
@@ -69,11 +76,11 @@ export default function Login() {
             </Alert>
           )}
 
-          <Box component="form" noValidate autoComplete="off">
+          <Box>
             <TextField
               fullWidth
               margin="normal"
-              label="Email"
+              label="아이디"
               variant="outlined"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -82,10 +89,10 @@ export default function Login() {
             <TextField
               fullWidth
               margin="normal"
-              label="Password"
+              label="비밀번호"
               type={showPassword ? 'text' : 'password'}
               variant="outlined"
-              placeholder="At least 12 characters"
+              placeholder="12자 이상 입력하세요."
               value={password}
               onChange={e => setPassword(e.target.value)}
               autoComplete="off"
@@ -123,7 +130,7 @@ export default function Login() {
               sx={{ mb: 2 }}
               onClick={handleLogin}
             >
-              Sign in
+              로그인
             </Button>
 
             <Box display="flex" justifyContent="center" gap={2} mt={1}>
@@ -137,15 +144,15 @@ export default function Login() {
               </IconButton>
             </Box>
 
-            <Typography variant="body2" color="text.secondary" mt={3}>
+            <Typography variant="body2" color="text.secondary" mt={3} textAlign="center">
               계정이 없으신가요?{' '}
               <RouterLink to="/signup" style={{ fontWeight: 'bold', textDecoration: 'underline' }}>
                 회원가입
               </RouterLink>
             </Typography>
           </Box>
-        </Paper>
+        </Box>
       </Container>
-    </Box>
+    </>
   )
 }

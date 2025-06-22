@@ -40,7 +40,12 @@ export default function Header() {
 
   return (
     <AppBar position="static" color="transparent" elevation={3}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+      <Toolbar sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        paddingTop: 1.5,    // 헤더 여백 추가
+        paddingBottom: 1.5
+      }}>
         {/* 로고 클릭하면 홈으로 */}
         <Box
           sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
@@ -49,7 +54,7 @@ export default function Header() {
           <img
             src={LogoImage}
             alt="큐레카 로고"
-            style={{ height: 80, marginRight: 8 }}
+            style={{ height: 60, marginRight: 8 }}  // 기존 80에서 100으로 변경
           />
         </Box>
 
@@ -58,7 +63,7 @@ export default function Header() {
           <Button
             variant="text"
             onClick={() => navigate('/')}
-            sx={{ textTransform: 'none', mr: 2, fontSize: '1.2rem' }}
+            sx={{ textTransform: 'none', mr: 2, fontSize: '1.3rem' }}
           >
             홈
           </Button>
@@ -66,7 +71,7 @@ export default function Header() {
           <Button
             variant="text"
             onClick={() => navigate('/upload')}
-            sx={{ textTransform: 'none', mr: 2,fontSize: '1.2rem' }}
+            sx={{ textTransform: 'none', mr: 2,fontSize: '1.3rem' }}
           >
             실습하기
           </Button>
@@ -111,6 +116,11 @@ export default function Header() {
               variant="outlined"
               size="small"
               onClick={() => navigate('/login')}
+              sx={{ 
+                fontSize: '1.1rem',
+                py: 0.5,  
+                height: 'auto'  
+              }} 
             >
               로그인
             </Button>

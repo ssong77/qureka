@@ -73,7 +73,7 @@ type AiQuestionPromptKey_Korean =
   | 'n지 선다형'
   | '순서 배열형'
   | '빈칸 채우기형'
-  | '참/거짓형'
+  | '참거짓형'
   | '단답형'
   | '서술형'
 const questionLabels = [
@@ -88,7 +88,7 @@ const aiQuestionPromptKeys_Korean: AiQuestionPromptKey_Korean[] = [
   'n지 선다형',
   '순서 배열형',
   '빈칸 채우기형',
-  '참/거짓형',
+  '참거짓형',
   '단답형',
   '서술형',
 ]
@@ -399,7 +399,7 @@ const handleDownloadQuestion = async () => {
       >
         <Container maxWidth="md">
           <Typography variant="h1" align="center" mb={3}>
-             문서 업로드 {/*및 {mainTab === 'summary' ? '요약' : '문제 생성'} */}
+            문서 업로드
           </Typography>
 
           {/* Upload Box */}
@@ -1374,7 +1374,7 @@ const handleDownloadQuestion = async () => {
                           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                         }}
                       >
-                        {['언어','과학','사회','경제','인문학','공학'].map(o => (
+                        {['언어','과학','사회','경제','인문학','공학','철학','종교'].map(o => (
                           <MenuItem key={o} value={o} sx={{ '&:hover': { backgroundColor: '#f1f5f9' }, '&.Mui-selected': { backgroundColor: '#e0e7ff', '&:hover': { backgroundColor: '#c7d2fe' } } }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <SchoolIcon sx={{ fontSize: 18, color: '#6366f1' }} /> {o}

@@ -31,7 +31,7 @@ export const tokenStorage = {
     return tokenStorage.getStorage().getItem('refreshToken');
   },
   
-  // 토큰 저장하기
+  // 토큰 저장 및 스토리지 타입 설정 개선
   setTokens: (accessToken: string, refreshToken: string, rememberMe?: boolean) => {
     // rememberMe 파라미터가 있으면 스토리지 타입 설정
     if (rememberMe !== undefined) {
@@ -41,6 +41,17 @@ export const tokenStorage = {
     const storage = tokenStorage.getStorage();
     storage.setItem('accessToken', accessToken);
     storage.setItem('refreshToken', refreshToken);
+    
+    // rememberMe 상태도 저장
+    if (rememberMe !== undefined) {
+      storage.setItem('rememberMe', String(rememberMe));
+    }
+  },
+  
+  // 자동 로그인 상태 확인 메서드 추가
+  isRememberMeEnabled: () => {
+    const storage = tokenStorage.getStorage();
+    return storage.getItem('rememberMe') === 'true';
   },
   
   // 토큰 삭제하기
@@ -147,7 +158,7 @@ export const aiAPI = axios.create({
   }
 });
 
-// 사용자 관리 API - 기존 인터페이스 유지
+// 사용자 관리 API 개선
 export const userAPI = {
   checkUserid: (userid: string) =>
     backendAPI.post('/users/check-userid', { userid }),
@@ -202,7 +213,7 @@ export const userAPI = {
     }
   },
   
-  // 토큰 검증 메서드 추가
+  // 토큰 검증 메서드 강화
   validateToken: async () => {
     try {
       if (!tokenStorage.hasTokens()) {
@@ -210,7 +221,17 @@ export const userAPI = {
       }
       
       const response = await backendAPI.get('/auth/verify');
-      return response.data;
+      
+      // 서버에서 응답받은 사용자 정보 반환
+      if (response.data.success) {
+        return {
+          success: true,
+          user: response.data.user,
+          message: '유효한 토큰입니다.'
+        };
+      }
+      
+      return { success: false, message: '토큰이 유효하지 않습니다.' };
     } catch (error) {
       return { 
         success: false, 
